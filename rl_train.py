@@ -306,80 +306,87 @@ clock = pygame.time.Clock()
 time_step = 0
 iteration_step = 0
 
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            dqn_agent.save_model()
-            pygame.quit()
-            sys.exit()
+try:
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                dqn_agent.save_model()
+                pygame.quit()
+                sys.exit()
 
-    # Update
-    all_sprites.update()
+        # Update
+        all_sprites.update()
 
-    # Get current state (sensor distances)
-    state = np.array(car.get_sensor_distances())
+        # Get current state (sensor distances)
+        state = np.array(car.get_sensor_distances())
 
-    # Choose action using DQN agent
-    action = dqn_agent.act(state)
+        # Choose action using DQN agent
+        action = dqn_agent.act(state)
 
-    # Perform action and get the next state, reward, and done flag
-    car.angle += (action - 1) * 5
-    car.rect.x += car.speed * math.cos(math.radians(car.angle))
-    car.rect.y -= car.speed * math.sin(math.radians(car.angle))
-    next_state = np.array(car.get_sensor_distances())
+        # Perform action and get the next state, reward, and done flag
+        car.angle += (action - 1) * 5
+        car.rect.x += car.speed * math.cos(math.radians(car.angle))
+        car.rect.y -= car.speed * math.sin(math.radians(car.angle))
+        next_state = np.array(car.get_sensor_distances())
 
-    # Define rewards
-    crash_reward = -100
-    time_step_reward = 1
-    turn_reward = -0.1
-    
-    # Collision detection 
-    if car.collided or time_step == 4000:
-        reward = crash_reward
-        done = True
+        # Define rewards
+        crash_reward = -100
+        time_step_reward = 1
+        turn_reward = -0.1
+        
+        # Collision detection 
+        if car.collided or time_step == 4000:
+            reward = crash_reward
+            done = True
 
-        # Check if it's time to change the map
-        if iteration_step >= 20000:  # Change the map after an episode (adjust as needed)
-            # Clear existing obstacles
-            all_sprites.remove(*obstacles)
-            obstacles.empty()
-            # Create new obstacles with random positions
-            obstacles = create_random_obstacles(NUM_OBSTACLE)  # You can adjust the number of obstacles
-            # Add new obstacles to the sprite group
-            all_sprites.add(*obstacles)
-            time_step = 0
-            iteration_step = 0
-            dqn_agent.reset()
-            dqn_agent.save_model()
-    else:
-        reward = time_step_reward
-        done = False
+            # Check if it's time to change the map
+            if iteration_step >= 20000:  # Change the map after an episode (adjust as needed)
+                # Clear existing obstacles
+                all_sprites.remove(*obstacles)
+                obstacles.empty()
+                # Create new obstacles with random positions
+                obstacles = create_random_obstacles(NUM_OBSTACLE)  # You can adjust the number of obstacles
+                # Add new obstacles to the sprite group
+                all_sprites.add(*obstacles)
+                time_step = 0
+                iteration_step = 0
+                dqn_agent.reset()
+                dqn_agent.save_model()
+        else:
+            reward = time_step_reward
+            done = False
 
-    # Penalize for turning
-    if action != 1:  # Action 1 corresponds to no turn
-        reward = turn_reward
-    
-    # Store the experience in the memory
-    dqn_agent.remember(state, action, reward, next_state, done)
+        # Penalize for turning
+        if action != 1:  # Action 1 corresponds to no turn
+            reward = turn_reward
+        
+        # Store the experience in the memory
+        dqn_agent.remember(state, action, reward, next_state, done)
 
-    # Replay and target network update
-    dqn_agent.replay()
-    update_target_network_counter += 1
-    if update_target_network_counter % update_target_network_frequency == 0:
-        dqn_agent.target_train()
+        # Replay and target network update
+        dqn_agent.replay()
+        update_target_network_counter += 1
+        if update_target_network_counter % update_target_network_frequency == 0:
+            dqn_agent.target_train()
 
-    # Exploration-exploitation decay
-    if dqn_agent.epsilon > dqn_agent.epsilon_min:
-        dqn_agent.epsilon *= dqn_agent.epsilon_decay
+        # Exploration-exploitation decay
+        if dqn_agent.epsilon > dqn_agent.epsilon_min:
+            dqn_agent.epsilon *= dqn_agent.epsilon_decay
 
-    # Draw and display
-    screen.fill(BLACK)
-    for sensor in car.sensors:
-        pygame.draw.line(screen, YELLOW, sensor.start_pos, sensor.end_pos, 2)
-    all_sprites.draw(screen)
-    pygame.display.flip()
-    clock.tick(FPS)
-    
-    # eval
-    time_step += 1
-    iteration_step += 1
+        # Draw and display
+        screen.fill(BLACK)
+        for sensor in car.sensors:
+            pygame.draw.line(screen, YELLOW, sensor.start_pos, sensor.end_pos, 2)
+        all_sprites.draw(screen)
+        pygame.display.flip()
+        clock.tick(FPS)
+        
+        # eval
+        time_step += 1
+        iteration_step += 1     
+except KeyboardInterrupt:
+    pass
+finally:
+    dqn_agent.save_model()
+    pygame.quit()
+    sys.exit()
