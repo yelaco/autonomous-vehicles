@@ -36,7 +36,7 @@ WALLS = [
 # Deep Q Network parameters
 state_size = 5  # Number of sensor readings (left, front, right)
 action_size = 3  # Number of possible actions (e.g., move left, no action, move right)
-learning_rate = 0.001
+learning_rate = 0.0005
 
 # Define the DQN model
 def create_dqn_model():
@@ -292,7 +292,7 @@ all_sprites.add(car, *obstacles)
 
 # Initialize counter
 update_target_network_counter = 0
-update_target_network_frequency = 4000  # Adjust as needed
+update_target_network_frequency = 1000  # Adjust as needed
 
 # Create the DQN agent
 dqn_agent = DQNAgent()
