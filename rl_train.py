@@ -7,6 +7,16 @@ import random
 import tensorflow as tf
 from tensorflow.keras import layers
 
+# for auto push git directory
+from git import Repo
+from dotenv import load_dotenv
+
+load_dotenv()
+username = os.getenv("USERNAME")
+password = os.getenv("PASSWORD")
+repo_path = "./"
+repo = Repo(repo_path)
+
 # Constants
 WIDTH, HEIGHT = 1200, 800
 CAR_RADIUS = 12
@@ -37,6 +47,11 @@ WALLS = [
 state_size = 5  # Number of sensor readings (left, front, right)
 action_size = 3  # Number of possible actions (e.g., move left, no action, move right)
 learning_rate = 0.0005
+
+def git_push():  
+    repo.git.add("dqn_model.keras")
+    repo.git.commit("-m", "training")
+    repo.git.push(f"https://{username}:{password}@github.com/minhquang053/obstacle_avoiding_car.git")
 
 # Define the DQN model
 def create_dqn_model():
@@ -352,6 +367,7 @@ try:
                 iteration_step = 0
                 dqn_agent.reset()
                 dqn_agent.save_model()
+                git_push()
         else:
             reward = time_step_reward
             done = False
