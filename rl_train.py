@@ -404,5 +404,6 @@ except KeyboardInterrupt:
     pass
 finally:
     dqn_agent.save_model()
+    git_push()
     pygame.quit()
     sys.exit()
