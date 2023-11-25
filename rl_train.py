@@ -350,27 +350,15 @@ try:
         turn_reward = -0.1
         
         # Collision detection 
-        if car.collided or time_step == 4000:
+        if car.collided:
             reward = crash_reward
             done = True
-
-            # Check if it's time to change the map
-            if iteration_step >= 20000:  # Change the map after an episode (adjust as needed)
-                # Clear existing obstacles
-                all_sprites.remove(*obstacles)
-                obstacles.empty()
-                # Create new obstacles with random positions
-                obstacles = create_random_obstacles(NUM_OBSTACLE)  # You can adjust the number of obstacles
-                # Add new obstacles to the sprite group
-                all_sprites.add(*obstacles)
-                time_step = 0
-                iteration_step = 0
-                dqn_agent.reset()
-                dqn_agent.save_model()
-                git_push()
         else:
             reward = time_step_reward
             done = False
+            if time_step == 4000:
+                time_step = 0
+                done = True
 
         # Penalize for turning
         if action != 1:  # Action 1 corresponds to no turn
@@ -400,6 +388,19 @@ try:
         # eval
         time_step += 1
         iteration_step += 1     
+        if (iteration_step == 20000):
+            # Clear existing obstacles
+            all_sprites.remove(*obstacles)
+            obstacles.empty()
+            # Create new obstacles with random positions
+            obstacles = create_random_obstacles(NUM_OBSTACLE)  # You can adjust the number of obstacles
+            # Add new obstacles to the sprite group
+            all_sprites.add(*obstacles)
+            time_step = 0
+            iteration_step = 0
+            dqn_agent.reset()
+            dqn_agent.save_model()
+            git_push()
 except KeyboardInterrupt:
     pass
 finally:
