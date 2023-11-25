@@ -262,6 +262,8 @@ while True:
     # Collision detection 
     if car.collided or time_step == 4000:
         reward = crash_reward
+        if time_step == 4000:
+            reward = time_step_reward
         done = True
         
         # Change the map after crashes (adjust as needed)
