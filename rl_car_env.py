@@ -11,6 +11,7 @@ import random
 WIDTH, HEIGHT = 1200, 800
 CAR_RADIUS = 12
 CAR_SPEED = 6
+MAX_CAR_SPEED = 20
 OBSTACLE_SIZE = 50
 SENSOR_LENGTH = 400
 FPS = 60
@@ -36,6 +37,7 @@ WALLS = [
 # Reward
 NOT_CRASH = 1
 CRASH = -100
+STOP = -1
 TURN_PENALTY = -0.5
 
 # Car class
@@ -238,27 +240,31 @@ class RlCarEnv(gym.Env):
         # Take a step in the environment given the action
         # Return the next observation, reward, done flag, and additional information
         if action == 1 or action == 3 or action == 5:
-            self.car.speed -= 4
+            if (self.car.speed - 4 >= 0):
+                self.car.speed -= 4
         elif action == 0 or action == 2 or action == 4:
-            self.car.speed += 1
+            if (self.car.speed + 1 <= MAX_CAR_SPEED):
+                self.car.speed += 1
 
         direction = action // 2
-        direction = 1
         self.car.angle += (direction - 1) * 5
-        self.car.rect.x -= self.car.speed * math.cos(math.radians(self.car.angle))
+        self.car.rect.x += self.car.speed * math.cos(math.radians(self.car.angle))
         self.car.rect.y -= self.car.speed * math.sin(math.radians(self.car.angle))
         
         # Collision detection 
-        if self.car.collided or self.car.speed == 0:
+        if self.car.collided:
             reward = CRASH
             terminated = True
+        elif self.car.speed == 0:
+            reward = STOP
+            terminated = False
         else:
             reward = NOT_CRASH
+            # Penalize for turning
+            if action != 2 and action != 3:  # Action 2, 3 correspond to forward
+                reward += TURN_PENALTY
             terminated = False
-
-        # Penalize for turning
-        if action != 2 and action != 3:  # Action 2, 3 correspond to forward
-            reward += TURN_PENALTY
+        
 
         next_obs = np.array(self.car.get_sensor_distances())
         return next_obs, reward, terminated, terminated 
@@ -292,6 +298,7 @@ clock = pygame.time.Clock()
 while not done: 
     action = env.action_space.sample()
     obs, reward, terminated, truncated = env.step(action)
+    print(reward)
     env.render()
     clock.tick(FPS)
 env.close()
