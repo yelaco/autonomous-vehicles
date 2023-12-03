@@ -1,13 +1,13 @@
+import gym
+from gym import spaces
+import numpy as np
 import pygame
 import sys
 import os
 import math
-import numpy as np
 import random
-import tensorflow as tf
-from tensorflow.keras import layers
 
-# Constants
+#Constants
 WIDTH, HEIGHT = 1200, 800
 CAR_RADIUS = 12
 CAR_SPEED = 6
@@ -24,7 +24,6 @@ WALL_COLOR = BLACK
 
 # Addition
 NUM_OBSTACLE = 24
-NUM_CRASH = 10000
 
 # Wall positions (left, top, width, height)
 WALLS = [
@@ -34,28 +33,16 @@ WALLS = [
     pygame.Rect(0, HEIGHT - WALL_THICKNESS, WIDTH, WALL_THICKNESS),  # Bottom wall
 ]
 
-# Deep Q Network parameters
-state_size = 5  # Number of sensor readings (left, front, right)
-action_size = 3  # Number of possible actions (e.g., move left, no action, move right)
-
-# DQN Agent class
-class DQNAgent:
-    def act(self, state):
-        # Let the model predict
-        q_values = self.model.predict(np.array([state]))
-        return np.argmax(q_values[0])
-
-    def load_model(self, model_path='dqn_model.keras'):
-        if os.path.exists(model_path):
-            self.model = tf.keras.models.load_model(model_path)
-            print(f"Model loaded from {model_path}")
-        else:
-            print(f"No pre-trained model found at {model_path}. Creating a new model.")
+# Reward
+NOT_CRASH = 1
+CRASH = -100
+TURN_PENALTY = -0.5
 
 # Car class
 class Car(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
+        
         self.image = pygame.Surface((2 * CAR_RADIUS, 2 * CAR_RADIUS), pygame.SRCALPHA)
         pygame.draw.circle(self.image, WHITE, (CAR_RADIUS, CAR_RADIUS), CAR_RADIUS)
         self.rect = self.image.get_rect(center=(x, y))
@@ -65,19 +52,16 @@ class Car(pygame.sprite.Sprite):
 
         # Sensor directions (relative angles)
         # represent left, front, right sensor
-        self.sensor_angles = [45, 22.5, 0, -22.5, -45]
+        self.sensor_angles = [-45, -22.5, 0, 22.5, 45]
         self.sensors = [Sensor(self.rect.center, angle) for angle in self.sensor_angles]
-
+        
     def update(self):
         # Check for collisions with obstacles
         self.collided = False
-        collisions = pygame.sprite.spritecollide(self, obstacles, False)
+        collisions = pygame.sprite.spritecollide(self, self.obstacles, False)
 
         if collisions:
-            # If collision with an obstacle, respawn the car at the center
-            self.rect.center = (20, HEIGHT // 2)
-            self.angle = 0
-            self.collided = True
+            self.reset_car_position()
 
         # Update sensor positions and distances
         for sensor in self.sensors:
@@ -86,6 +70,12 @@ class Car(pygame.sprite.Sprite):
     def get_sensor_distances(self):
         return [sensor.distance for sensor in self.sensors]
 
+    def reset_car_position(self):
+        # If collision with an obstacle, respawn the car at the center
+        self.rect.center = (20, HEIGHT // 2)
+        self.angle = 0
+        self.collided = True
+    
 # Sensor class
 class Sensor(pygame.sprite.Sprite):
     def __init__(self, start_pos, angle_offset):
@@ -111,7 +101,7 @@ class Sensor(pygame.sprite.Sprite):
         closest_obstacle = None
         closest_distance = SENSOR_LENGTH
 
-        for obstacle in obstacles:
+        for obstacle in self.obstacles:
             # Calculate the intersection point of the line segment and the obstacle's rect
             intersection_point = self.get_line_rect_intersection(self.start_pos, self.end_pos, obstacle.rect)
             if intersection_point:
@@ -183,17 +173,20 @@ class Obstacle(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(x, y))
 
 # Function to create obstacles with random positions
-def create_random_obstacles(num_obstacles):
+def create_random_obstacles(num_obstacles, all_sprites, car):
     obstacles = pygame.sprite.Group()
     for _ in range(num_obstacles):
-        x = random.randint(120, WIDTH - OBSTACLE_SIZE)
-        y = random.randint(0, HEIGHT - OBSTACLE_SIZE)
-        # for better randomness ? not sure
-        x = random.randint(120, WIDTH - OBSTACLE_SIZE)
-        y = random.randint(0, HEIGHT - OBSTACLE_SIZE)
-        
-        color = WHITE
-        obstacle = Obstacle(x, y, color)
+        while (True):
+            x = random.randint(120, WIDTH - OBSTACLE_SIZE)
+            y = random.randint(0, HEIGHT - OBSTACLE_SIZE)
+            # for better randomness ? not sure
+            x = random.randint(120, WIDTH - OBSTACLE_SIZE)
+            y = random.randint(0, HEIGHT - OBSTACLE_SIZE)
+            
+            color = WHITE
+            obstacle = Obstacle(x, y, color)
+            if not pygame.sprite.collide_rect(car, obstacle):
+                break
         obstacles.add(obstacle)
     
     for wall in WALLS:
@@ -204,98 +197,100 @@ def create_random_obstacles(num_obstacles):
     
     return obstacles
 
-# Initialize Pygame
-pygame.init()
+class RlCarEnv(gym.Env):
+    def __init__(self):
+        super(RlCarEnv, self).__init__()
 
-# Initialize screen
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Autonomous Car Simulation")
+        # Direction | Forward | Forward | Left | Left | Right | Right |
+        # Speed     |   Up    |   Down  |  Up  | Down |  Up   |  Down |
+        # ==> 6 actions discrete actions
+        self.action_space = spaces.Discrete(6)  # Right - spee
+        self.observation_space = spaces.Box(low=0, high=200, shape=(6,), dtype=np.int16)  # Example: RGB image
 
-# Create sprites
-all_sprites = pygame.sprite.Group()
-car = Car(20, HEIGHT // 2)
+        # Initialize Pygame
+        pygame.init()
 
-# Initialize sprites outside the game loop
-obstacles = create_random_obstacles(NUM_OBSTACLE)  # Initial number of obstacles
-all_sprites.add(car, *obstacles)
+        # Initialize screen
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        pygame.display.set_caption("Autonomous Car Simulation")
 
-# Create the DQN agent
-dqn_agent = DQNAgent()
+        # Create sprites
+        self.all_sprites = pygame.sprite.Group()
+        self.car = Car(20, HEIGHT // 2)
 
-# Load the model when the application starts
-dqn_agent.load_model()
+        # Initialize sprites outside the game loop
+        self.obstacles = create_random_obstacles(NUM_OBSTACLE, self.all_sprites, self.car)  # Initial number of obstacles
+        self.all_sprites.add(self.car, *self.obstacles)
+        self.car.obstacles = self.obstacles
+        for sensor in self.car.sensors:
+            sensor.obstacles = self.car.obstacles
+            
+        # Game loop
+        self.clock = pygame.time.Clock()
 
-# Game loop
+    def reset(self):
+        # Reset the environment to its initial state
+        self.car.reset_car_position()
+        
+        return np.array(self.car.get_sensor_distances())
+
+    def step(self, action):
+        # Take a step in the environment given the action
+        # Return the next observation, reward, done flag, and additional information
+        if action == 1 or action == 3 or action == 5:
+            self.car.speed -= 4
+        elif action == 0 or action == 2 or action == 4:
+            self.car.speed += 1
+
+        direction = action // 2
+        self.car.angle += (direction- 1) * 5
+        self.car.rect.x += self.car.speed * math.cos(math.radians(self.car.angle))
+        self.car.rect.y -= self.car.speed * math.sin(math.radians(self.car.angle))
+        
+        # Collision detection 
+        if self.car.collided or self.car.speed == 0:
+            reward = CRASH
+            terminated = True
+        else:
+            reward = NOT_CRASH
+            terminated = False
+
+        # Penalize for turning
+        if action != 2 and action != 3:  # Action 2, 3 correspond to forward
+            reward += TURN_PENALTY
+
+        next_obs = np.array(self.car.get_sensor_distances())
+        return next_obs, reward, terminated, terminated 
+
+    def render(self, mode='human'):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        # Update
+        self.all_sprites.update()
+
+        # Draw and display
+        self.screen.fill(BLACK)
+        for sensor in self.car.sensors:
+            pygame.draw.line(self.screen, YELLOW, sensor.start_pos, sensor.end_pos, 2)
+        self.all_sprites.draw(self.screen)
+        pygame.display.flip()
+        self.clock.tick(FPS)
+    def close(self):
+        # Perform cleanup operations, if needed
+        pygame.quit()
+
+env = RlCarEnv()
+
+obs = env.reset()
+done = False
 clock = pygame.time.Clock()
 
-time_step = 0
-iteration_step = 0
-
-total_reward = 0
-
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-
-    # Update
-    all_sprites.update()
-
-    # Get current state (sensor distances)
-    state = np.array(car.get_sensor_distances())
-
-    # Choose action using DQN agent
-    action = dqn_agent.act(state)
-
-    # Perform action and get the next state, reward, and done flag
-    car.angle += (action - 1) * 5
-    car.rect.x += car.speed * math.cos(math.radians(car.angle))
-    car.rect.y -= car.speed * math.sin(math.radians(car.angle))
-    next_state = np.array(car.get_sensor_distances())
-
-    # Define rewards
-    crash_reward = -100
-    time_step_reward = 1
-    turn_penalty = -0.1
-
-    # Collision detection 
-    if car.collided or time_step == 4000:
-        reward = crash_reward
-        if time_step == 4000:
-            reward = time_step_reward
-        done = True
-        
-        # Change the map after crashes (adjust as needed)
-        # Clear existing obstacles
-        all_sprites.remove(*obstacles)
-        obstacles.empty()
-        # Create new obstacles with random positions
-        obstacles = create_random_obstacles(NUM_OBSTACLE)  # You can adjust the number of obstacles
-        # Add new obstacles to the sprite group
-        all_sprites.add(*obstacles)
-        time_step = 0
-    elif action != 1:
-        reward = turn_penalty
-    else:
-        reward = time_step_reward
-        done = False
-
-    total_reward += reward
-    
-    # Draw and display
-    screen.fill(BLACK)
-    for sensor in car.sensors:
-        pygame.draw.line(screen, YELLOW, sensor.start_pos, sensor.end_pos, 2)
-    all_sprites.draw(screen)
-    pygame.display.flip()
-    
+while not done: 
+    action = env.action_space.sample()
+    obs, reward, terminated, truncated = env.step(action)
+    env.render()
     clock.tick(FPS)
-    
-    # eval
-    time_step += 1
-    iteration_step += 1
-    if iteration_step == 20000:
-        print(f"Total evaluation: {total_reward/iteration_step}")
-        pygame.quit()
-        sys.exit()
+env.close()
