@@ -205,7 +205,7 @@ class RlCarEnv(gym.Env):
         # Speed     |   Up    |   Down  |  Up  | Down |  Up   |  Down |
         # ==> 6 actions discrete actions
         self.action_space = spaces.Discrete(6)  # Right - spee
-        self.observation_space = spaces.Box(low=0, high=200, shape=(6,), dtype=np.int16)  # Example: RGB image
+        self.observation_space = spaces.Box(low=0, high=400, shape=(6,), dtype=np.int16)  # Example: RGB image
 
         # Initialize Pygame
         pygame.init()
@@ -243,8 +243,9 @@ class RlCarEnv(gym.Env):
             self.car.speed += 1
 
         direction = action // 2
-        self.car.angle += (direction- 1) * 5
-        self.car.rect.x += self.car.speed * math.cos(math.radians(self.car.angle))
+        direction = 1
+        self.car.angle += (direction - 1) * 5
+        self.car.rect.x -= self.car.speed * math.cos(math.radians(self.car.angle))
         self.car.rect.y -= self.car.speed * math.sin(math.radians(self.car.angle))
         
         # Collision detection 
