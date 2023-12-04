@@ -8,11 +8,11 @@ import math
 import random
 
 #Constants
-WIDTH, HEIGHT = 1200, 800
+WIDTH, HEIGHT = 800, 600
 CAR_RADIUS = 12
-CAR_SPEED = 6
-MAX_CAR_SPEED = 20
-OBSTACLE_SIZE = 50
+CAR_SPEED = 1
+MAX_CAR_SPEED = 10
+OBSTACLE_SIZE = 45
 SENSOR_LENGTH = 400
 FPS = 60
 WHITE = (255, 255, 255)
@@ -38,7 +38,7 @@ WALLS = [
 NOT_CRASH = 1
 CRASH = -100
 STOP = -1
-TURN_PENALTY = -0.5
+TURN_PENALTY = -1
 
 # Car class
 class Car(pygame.sprite.Sprite):
@@ -60,7 +60,7 @@ class Car(pygame.sprite.Sprite):
     def update(self):
         # Check for collisions with obstacles
         self.collided = False
-        collisions = pygame.sprite.spritecollide(self, self.obstacles, False)
+        collisions = pygame.sprite.spritecollide(self, obstacles, False)
 
         if collisions:
             self.reset_car_position()
@@ -69,8 +69,8 @@ class Car(pygame.sprite.Sprite):
         for sensor in self.sensors:
             sensor.update(self.rect.center, self.angle)
 
-    def get_sensor_distances(self):
-        return [sensor.distance for sensor in self.sensors]
+    def get_sensor_values(self):
+        return [sensor.distance // 200 for sensor in self.sensors] + [self.speed]
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
@@ -103,7 +103,7 @@ class Sensor(pygame.sprite.Sprite):
         closest_obstacle = None
         closest_distance = SENSOR_LENGTH
 
-        for obstacle in self.obstacles:
+        for obstacle in obstacles:
             # Calculate the intersection point of the line segment and the obstacle's rect
             intersection_point = self.get_line_rect_intersection(self.start_pos, self.end_pos, obstacle.rect)
             if intersection_point:
@@ -199,6 +199,14 @@ def create_random_obstacles(num_obstacles, all_sprites, car):
     
     return obstacles
 
+# Create sprites
+all_sprites = pygame.sprite.Group()
+car = Car(20, HEIGHT // 2)
+
+# Initialize sprites outside the game loop
+obstacles = create_random_obstacles(NUM_OBSTACLE, all_sprites, car)  # Initial number of obstacles
+all_sprites.add(car, *obstacles) 
+
 class RlCarEnv(gym.Env):
     def __init__(self):
         super(RlCarEnv, self).__init__()
@@ -206,99 +214,72 @@ class RlCarEnv(gym.Env):
         # Direction | Forward | Forward | Left | Left | Right | Right |
         # Speed     |   Up    |   Down  |  Up  | Down |  Up   |  Down |
         # ==> 6 actions discrete actions
-        self.action_space = spaces.Discrete(6)  # Right - spee
-        self.observation_space = spaces.Box(low=0, high=400, shape=(6,), dtype=np.int16)  # Example: RGB image
-
+        self.action_space = spaces.Discrete(6)
+        low = [0] * 5 + [0] # 5 distance sensors and 1 velocity sensor
+        high = [20] * 5 + [10]
+        self.observation_space = spaces.Box(low=np.array(low), high=np.array(high), dtype=np.uint8)
+        
         # Initialize Pygame
         pygame.init()
 
         # Initialize screen
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Autonomous Car Simulation")
-
-        # Create sprites
-        self.all_sprites = pygame.sprite.Group()
-        self.car = Car(20, HEIGHT // 2)
-
-        # Initialize sprites outside the game loop
-        self.obstacles = create_random_obstacles(NUM_OBSTACLE, self.all_sprites, self.car)  # Initial number of obstacles
-        self.all_sprites.add(self.car, *self.obstacles)
-        self.car.obstacles = self.obstacles
-        for sensor in self.car.sensors:
-            sensor.obstacles = self.car.obstacles
             
         # Game loop
         self.clock = pygame.time.Clock()
 
     def reset(self):
         # Reset the environment to its initial state
-        self.car.reset_car_position()
+        car.reset_car_position()
         
-        return np.array(self.car.get_sensor_distances())
+        return np.array(car.get_sensor_values(), dtype=np.uint8)
 
     def step(self, action):
         # Take a step in the environment given the action
         # Return the next observation, reward, done flag, and additional information
         if action == 1 or action == 3 or action == 5:
-            if (self.car.speed - 4 >= 0):
-                self.car.speed -= 4
+            if car.speed - 4 >= 0:
+                car.speed -= 4
         elif action == 0 or action == 2 or action == 4:
-            if (self.car.speed + 1 <= MAX_CAR_SPEED):
-                self.car.speed += 1
+            if car.speed + 1 <= MAX_CAR_SPEED:
+                car.speed += 1
 
         direction = action // 2
-        self.car.angle += (direction - 1) * 5
-        self.car.rect.x += self.car.speed * math.cos(math.radians(self.car.angle))
-        self.car.rect.y -= self.car.speed * math.sin(math.radians(self.car.angle))
+        car.angle += (direction - 1) * 5
+        car.rect.x += car.speed * math.cos(math.radians(car.angle))
+        car.rect.y -= car.speed * math.sin(math.radians(car.angle))
         
         # Collision detection 
-        if self.car.collided:
+        if car.collided:
             reward = CRASH
-            terminated = True
-        elif self.car.speed == 0:
+        elif car.speed == 0:
             reward = STOP
-            terminated = False
         else:
             reward = NOT_CRASH
             # Penalize for turning
             if action != 2 and action != 3:  # Action 2, 3 correspond to forward
                 reward += TURN_PENALTY
-            terminated = False
-        
 
-        next_obs = np.array(self.car.get_sensor_distances())
-        return next_obs, reward, terminated, terminated 
+        next_obs = np.array(car.get_sensor_values(), dtype=np.uint8)
+        return next_obs, reward, False, False, {}
 
     def render(self, mode='human'):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
         # Update
-        self.all_sprites.update()
+        all_sprites.update()
 
         # Draw and display
         self.screen.fill(BLACK)
-        for sensor in self.car.sensors:
+        for sensor in car.sensors:
             pygame.draw.line(self.screen, YELLOW, sensor.start_pos, sensor.end_pos, 2)
-        self.all_sprites.draw(self.screen)
+        all_sprites.draw(self.screen)
         pygame.display.flip()
         self.clock.tick(FPS)
+        
     def close(self):
         # Perform cleanup operations, if needed
         pygame.quit()
-
-env = RlCarEnv()
-
-obs = env.reset()
-done = False
-clock = pygame.time.Clock()
-
-while not done: 
-    action = env.action_space.sample()
-    obs, reward, terminated, truncated = env.step(action)
-    print(reward)
-    env.render()
-    clock.tick(FPS)
-env.close()
+    
+    def seed(self, seed=None):
+        self.np_random, seed = gym.utils.seeding.np_random(seed)
+        return [seed]
