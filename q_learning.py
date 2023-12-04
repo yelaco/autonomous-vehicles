@@ -99,16 +99,19 @@ max_epsilon = 1.0
 min_epsilon = 0.05           
 decay_rate = 0.0005
 
-Qtable_rlcar = initialize_q_table(discrete_os_size, action_space)
+# Qtable_rlcar = initialize_q_table(discrete_os_size, action_space)
 
-# Start training
-Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable_rlcar)
+# # Start training
+# Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable_rlcar)
 
 
-print(Qtable_rlcar)
+# print(Qtable_rlcar)
 
-with open('q_table.pkl', 'wb') as f:
-    pickle.dump(Qtable_rlcar, f)
+# with open('q_table.pkl', 'wb') as f:
+#     pickle.dump(Qtable_rlcar, f)
+
+with open('q_table.pkl', 'rb') as f:
+    Qtable_rlcar = pickle.load(f)
 
 # Evaluate our Agent
 mean_reward, std_reward = evaluate_agent(env, max_steps, n_eval_episodes, Qtable_rlcar, eval_seed)
