@@ -56,6 +56,7 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q, seed):
     
         for step in range(max_steps):
             # Take the action (index) that have the maximum reward
+            print(f"Episode {episode}/{n_eval_episodes} step {step}")
             action = np.argmax(Q[state][:])
             new_state, reward, _, _, _= env.step(action)
             total_rewards_ep += reward
