@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 import random
 import gym
 import warnings
@@ -100,20 +101,26 @@ max_epsilon = 1.0
 min_epsilon = 0.05           
 decay_rate = 0.0005
 
-Qtable_rlcar = initialize_q_table(discrete_os_size, action_space)
+if len(sys.argv) == 1:
+    print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")
+    sys.exit()
+proc = sys.argv[1]
 
-# Start training
-Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable_rlcar)
+if proc == "train":
+    Qtable_rlcar = initialize_q_table(discrete_os_size, action_space)
+    
+    # Start training
+    Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable_rlcar)
+    print(Qtable_rlcar)
 
+    with open('q_table.pkl', 'wb') as f:
+        pickle.dump(Qtable_rlcar, f)
+elif proc == "evaluate":
+    with open('q_table.pkl', 'rb') as f:
+        Qtable_rlcar = pickle.load(f)
 
-print(Qtable_rlcar)
-
-with open('q_table.pkl', 'wb') as f:
-    pickle.dump(Qtable_rlcar, f)
-
-# with open('q_table.pkl', 'rb') as f:
-#     Qtable_rlcar = pickle.load(f)
-
-# # Evaluate our Agent
-# mean_reward, std_reward = evaluate_agent(env, max_steps, n_eval_episodes, Qtable_rlcar)
-# print(f"Mean_reward={mean_reward:.2f} +/- {std_reward:.2f}")
+    # Evaluate our Agent
+    mean_reward, std_reward = evaluate_agent(env, max_steps, n_eval_episodes, Qtable_rlcar)
+    print(f"Mean_reward={mean_reward:.2f} +/- {std_reward:.2f}")
+else:
+    print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")
