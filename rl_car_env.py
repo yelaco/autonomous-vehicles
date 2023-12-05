@@ -11,7 +11,8 @@ import random
 WIDTH, HEIGHT = 800, 600
 CAR_RADIUS = 12
 CAR_SPEED = 1
-MAX_CAR_SPEED = 10
+MIN_CAR_SPEED = 1
+MAX_CAR_SPEED = 8
 OBSTACLE_SIZE = 45
 SENSOR_LENGTH = 400
 FPS = 60
@@ -37,8 +38,8 @@ WALLS = [
 # Reward
 NOT_CRASH = 1
 CRASH = -100
-STOP = -1
-TURN_PENALTY = -1
+SLOW = -1
+TURN_PENALTY = -0.5
 
 # Car class
 class Car(pygame.sprite.Sprite):
@@ -70,7 +71,7 @@ class Car(pygame.sprite.Sprite):
             sensor.update(self.rect.center, self.angle)
 
     def get_sensor_values(self):
-        return [sensor.distance // 200 for sensor in self.sensors] + [self.speed]
+        return [sensor.distance // 200 for sensor in self.sensors] + [self.speed-1]
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
@@ -216,7 +217,7 @@ class RlCarEnv(gym.Env):
         # ==> 6 actions discrete actions
         self.action_space = spaces.Discrete(6)
         low = [0] * 5 + [0] # 5 distance sensors and 1 velocity sensor
-        high = [20] * 5 + [10]
+        high = [20] * 5 + [7]
         self.observation_space = spaces.Box(low=np.array(low), high=np.array(high), dtype=np.uint8)
         
         # Initialize Pygame
@@ -239,8 +240,8 @@ class RlCarEnv(gym.Env):
         # Take a step in the environment given the action
         # Return the next observation, reward, done flag, and additional information
         if action == 1 or action == 3 or action == 5:
-            if car.speed - 4 >= 0:
-                car.speed -= 4
+            if car.speed - 1 >= MIN_CAR_SPEED:
+                car.speed -= 1
         elif action == 0 or action == 2 or action == 4:
             if car.speed + 1 <= MAX_CAR_SPEED:
                 car.speed += 1
@@ -253,8 +254,8 @@ class RlCarEnv(gym.Env):
         # Collision detection 
         if car.collided:
             reward = CRASH
-        elif car.speed == 0:
-            reward = STOP
+        elif car.speed <= 2:
+            reward = SLOW
         else:
             reward = NOT_CRASH
             # Penalize for turning
