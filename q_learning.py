@@ -74,17 +74,17 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="gym")
 
 env = gym.make("RlCar-v0")
 
-print("Observation Space", env.observation_space)
-print("Sample observation", env.observation_space.sample())
+print("Observation Space:", env.observation_space)
+print("Sample observation:", env.observation_space.sample())
 
-print("Action Space Shape", env.action_space.n)
-print("Action Space Sample", env.action_space.sample())
+print("Action Space Shape:", env.action_space.n)
+print("Action Space Sample:", env.action_space.sample())
 
 discrete_os_size = [21, 21, 21, 21, 21, 8]
 action_space = env.action_space.n
 
 # Training parameters
-n_training_episodes = 1000
+n_training_episodes = 2000
 learning_rate = 0.0001 
 
 # Evaluation parameters
@@ -122,5 +122,12 @@ elif proc == "evaluate":
     # Evaluate our Agent
     mean_reward, std_reward = evaluate_agent(env, max_steps, n_eval_episodes, Qtable_rlcar)
     print(f"Mean_reward={mean_reward:.2f} +/- {std_reward:.2f}")
+elif proc == "check":
+    with open('q_table.pkl', 'rb') as f:
+        Qtable_rlcar = pickle.load(f)
+    
+    total_pairs = 21 * 21 * 21 * 21 * 21 * 8 * 6
+    mask = (Qtable_rlcar != 0.00000000e+00)
+    print(f"There are {len(Qtable_rlcar[mask])}/{total_pairs} state-action pairs that has been explored")
 else:
     print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")
