@@ -55,7 +55,7 @@ class Car(pygame.sprite.Sprite):
 
         # Sensor directions (relative angles)
         # represent left, front, right sensor
-        self.sensor_angles = [-45, -22.5, 0, 22.5, 45]
+        self.sensor_angles = [-45, 0, 45]
         self.sensors = [Sensor(self.rect.center, angle) for angle in self.sensor_angles]
         
     def update(self):
@@ -71,7 +71,7 @@ class Car(pygame.sprite.Sprite):
             sensor.update(self.rect.center, self.angle)
 
     def get_sensor_values(self):
-        return [sensor.distance // 200 for sensor in self.sensors] + [self.speed-1]
+        return [sensor.distance // 4 for sensor in self.sensors] + [self.speed-1]
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
@@ -212,12 +212,12 @@ class RlCarEnv(gym.Env):
     def __init__(self):
         super(RlCarEnv, self).__init__()
 
-        # Direction | Forward | Forward | Left | Left | Right | Right |
-        # Speed     |   Up    |   Down  |  Up  | Down |  Up   |  Down |
+        # Direction |  Left | Left | Left | Forward | Forward | Forward | Right | Right | Right |
+        # Speed     |   Up  | Down | Keep |   Up    |   Down  |   keep  |  Up   | Down  | Keep  |
         # ==> 6 actions discrete actions
-        self.action_space = spaces.Discrete(6)
-        low = [0] * 5 + [0] # 5 distance sensors and 1 velocity sensor
-        high = [20] * 5 + [7]
+        self.action_space = spaces.Discrete(9)
+        low = [0] * 3 + [0] # 3 distance sensors and 1 velocity sensor
+        high = [100] * 3 + [7]
         self.observation_space = spaces.Box(low=np.array(low), high=np.array(high), dtype=np.uint8)
         
         # Initialize Pygame
@@ -239,14 +239,14 @@ class RlCarEnv(gym.Env):
     def step(self, action):
         # Take a step in the environment given the action
         # Return the next observation, reward, done flag, and additional information
-        if action == 1 or action == 3 or action == 5:
+        if action == 1 or action == 4 or action == 7:
             if car.speed - 1 >= MIN_CAR_SPEED:
                 car.speed -= 1
-        elif action == 0 or action == 2 or action == 4:
+        elif action == 0 or action == 3 or action == 6:
             if car.speed + 1 <= MAX_CAR_SPEED:
                 car.speed += 1
 
-        direction = action // 2
+        direction = action // 3
         car.angle += (direction - 1) * 5
         car.rect.x += car.speed * math.cos(math.radians(car.angle))
         car.rect.y -= car.speed * math.sin(math.radians(car.angle))
@@ -259,7 +259,7 @@ class RlCarEnv(gym.Env):
         else:
             reward = NOT_CRASH
             # Penalize for turning
-            if action != 2 and action != 3:  # Action 2, 3 correspond to forward
+            if direction != 1:  # Direction 1 correspond to forward
                 reward += TURN_PENALTY
 
         next_obs = np.array(car.get_sensor_values(), dtype=np.uint8)

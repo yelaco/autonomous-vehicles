@@ -80,7 +80,7 @@ print("Sample observation:", env.observation_space.sample())
 print("Action Space Shape:", env.action_space.n)
 print("Action Space Sample:", env.action_space.sample())
 
-discrete_os_size = [21, 21, 21, 21, 21, 8]
+discrete_os_size = [101, 101, 101, 8]
 action_space = env.action_space.n
 
 # Training parameters
@@ -107,7 +107,12 @@ if len(sys.argv) == 1:
 proc = sys.argv[1]
 
 if proc == "train":
-    Qtable_rlcar = initialize_q_table(discrete_os_size, action_space)
+    try:    
+        with open('q_table.pkl', 'rb') as f:
+            Qtable_rlcar = pickle.load(f) 
+    except FileNotFoundError:
+        print("[!] No existing q-table found. Initializing a new one")
+        Qtable_rlcar = initialize_q_table(discrete_os_size, action_space)
     
     # Start training
     Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable_rlcar)
