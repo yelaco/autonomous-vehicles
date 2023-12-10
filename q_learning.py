@@ -131,7 +131,7 @@ elif proc == "check":
     with open('q_table.pkl', 'rb') as f:
         Qtable_rlcar = pickle.load(f)
     
-    total_pairs = 21 * 21 * 21 * 21 * 21 * 8 * 6
+    total_pairs = 101 * 101 * 101 * 8 * 9
     mask = (Qtable_rlcar != 0.00000000e+00)
     print(f"There are {len(Qtable_rlcar[mask])}/{total_pairs} state-action pairs that has been explored")
 else:
