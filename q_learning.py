@@ -20,7 +20,11 @@ def epsilon_greedy_policy(Qtable, state, epsilon):
     return action
 
 def greedy_policy(Qtable, state):
-    action = np.argmax(Qtable[tuple(state)])
+    random_int = random.uniform(0, 1)
+    if random_int > 0.9:
+        action = np.argmax(Qtable[tuple(state)])
+    else:
+        action = env.action_space.sample()
     return action
 
 def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable):
@@ -59,7 +63,6 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q):
             action = greedy_policy(Q, state)
             new_state, reward, _, _, _= env.step(action)
             state = new_state
-            print(reward)
             total_rewards_ep += reward
             
         episode_rewards.append(total_rewards_ep)
@@ -84,7 +87,7 @@ discrete_os_size = [101, 101, 101, 8]
 action_space = env.action_space.n
 
 # Training parameters
-n_training_episodes = 2000
+n_training_episodes = 10
 learning_rate = 0.0001 
 
 # Evaluation parameters

@@ -8,7 +8,7 @@ import math
 import random
 
 #Constants
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 800, 800
 CAR_RADIUS = 12
 CAR_SPEED = 1
 MIN_CAR_SPEED = 1
@@ -25,7 +25,7 @@ WALL_THICKNESS = 1
 WALL_COLOR = BLACK
 
 # Addition
-NUM_OBSTACLE = 24
+NUM_OBSTACLE = 12
 
 # Wall positions (left, top, width, height)
 WALLS = [
@@ -37,9 +37,9 @@ WALLS = [
 
 # Reward
 NOT_CRASH = 1
-CRASH = -100
-SLOW = -1
-TURN_PENALTY = -0.5
+CRASH = -20
+SLOW_PENALTY = -1
+TURN_PENALTY = 0.1
 
 # Car class
 class Car(pygame.sprite.Sprite):
@@ -255,12 +255,12 @@ class RlCarEnv(gym.Env):
         if car.collided:
             reward = CRASH
         elif car.speed <= 2:
-            reward = SLOW
+            reward = SLOW_PENALTY
         else:
             reward = NOT_CRASH
             # Penalize for turning
             if direction != 1:  # Direction 1 correspond to forward
-                reward += TURN_PENALTY
+                reward = TURN_PENALTY
 
         next_obs = np.array(car.get_sensor_values(), dtype=np.uint8)
         return next_obs, reward, False, False, {}
