@@ -21,7 +21,7 @@ def epsilon_greedy_policy(Qtable, state, epsilon):
 
 def greedy_policy(Qtable, state):
     random_int = random.uniform(0, 1)
-    if random_int > 0.9:
+    if random_int > 0.995:
         action = np.argmax(Qtable[tuple(state)])
     else:
         action = env.action_space.sample()
