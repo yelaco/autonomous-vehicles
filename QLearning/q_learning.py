@@ -87,7 +87,7 @@ discrete_os_size = [101, 101, 101, 8]
 action_space = env.action_space.n
 
 # Training parameters
-n_training_episodes = 10
+n_training_episodes = 2000
 learning_rate = 0.0001 
 
 # Evaluation parameters
