@@ -4,7 +4,7 @@ import random
 import gym
 import warnings
 import pickle
-import register_env
+import register_env as register_env
 from rl_car_env import RlCarEnv
 
 def initialize_q_table(state_space, action_space):

@@ -8,12 +8,12 @@ import math
 import random
 
 #Constants
-WIDTH, HEIGHT = 800, 800
+WIDTH, HEIGHT = 2000, 800
 CAR_RADIUS = 12
 CAR_SPEED = 1
 MIN_CAR_SPEED = 1
 MAX_CAR_SPEED = 8
-OBSTACLE_SIZE = 45
+OBSTACLE_SIZE = 150
 SENSOR_LENGTH = 400
 FPS = 60
 WHITE = (255, 255, 255)
@@ -25,7 +25,7 @@ WALL_THICKNESS = 1
 WALL_COLOR = BLACK
 
 # Addition
-NUM_OBSTACLE = 12
+NUM_OBSTACLE = 6
 
 # Wall positions (left, top, width, height)
 WALLS = [
@@ -180,10 +180,10 @@ def create_random_obstacles(num_obstacles, all_sprites, car):
     obstacles = pygame.sprite.Group()
     for _ in range(num_obstacles):
         while (True):
-            x = random.randint(120, WIDTH - OBSTACLE_SIZE)
+            x = random.randint(300, WIDTH - OBSTACLE_SIZE)
             y = random.randint(0, HEIGHT - OBSTACLE_SIZE)
             # for better randomness ? not sure
-            x = random.randint(120, WIDTH - OBSTACLE_SIZE)
+            x = random.randint(300, WIDTH - OBSTACLE_SIZE)
             y = random.randint(0, HEIGHT - OBSTACLE_SIZE)
             
             color = WHITE
