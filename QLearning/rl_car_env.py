@@ -8,7 +8,7 @@ import math
 import random
 
 #Constants
-WIDTH, HEIGHT = 2000, 800
+WIDTH, HEIGHT = 2000, 600
 CAR_RADIUS = 12
 CAR_SPEED = 1
 MIN_CAR_SPEED = 1
