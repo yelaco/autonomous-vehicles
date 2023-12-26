@@ -20,11 +20,11 @@ def epsilon_greedy_policy(Qtable, state, epsilon):
     return action
 
 def greedy_policy(Qtable, state):
-    random_int = random.uniform(0, 1)
-    if random_int > 0.995:
-        action = np.argmax(Qtable[tuple(state)])
-    else:
-        action = env.action_space.sample()
+    # random_int = random.uniform(0, 1)
+    # if random_int > 0.95:
+    action = np.argmax(Qtable[tuple(state)])
+    # else:
+    #     action = env.action_space.sample()
     return action
 
 def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable):
@@ -32,11 +32,13 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
         epsilon = min_epsilon + (max_epsilon - min_epsilon)*np.exp(-decay_rate*episode)
         #Reset the environment
         state = env.reset()
+        terminated = False
+
         # repeat
         for step in range(max_steps):
             print(f"Episode {episode}/{n_training_episodes} step {step}")
             action = epsilon_greedy_policy(Qtable, state, epsilon)
-            new_state, reward, _, _, _ = env.step(action) # Terminated, Truncated, Info are not needed
+            new_state, reward, terminated, _, _ = env.step(action) # Terminated, Truncated, Info are not needed
             env.render()
 
             # custom indexing for state and action 
@@ -44,6 +46,9 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
             new_state_action = tuple(np.append(new_state, action))
 
             Qtable[state_action] = Qtable[state_action] + learning_rate * (reward + gamma * np.max(Qtable[new_state_action]) - Qtable[state_action])
+            
+            if terminated:
+                break
             
             state = new_state
             
@@ -61,10 +66,14 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q):
             # Take the action (index) that have the maximum reward
             print(f"Episode {episode}/{n_eval_episodes} step {step}")
             action = greedy_policy(Q, state)
-            new_state, reward, _, _, _= env.step(action)
+            new_state, reward, terminated, _, _= env.step(action)
+            
+            if terminated:
+                break
+            
             state = new_state
             total_rewards_ep += reward
-            
+        
         episode_rewards.append(total_rewards_ep)
     env.close()
     mean_reward = np.mean(episode_rewards)
@@ -83,24 +92,24 @@ print("Sample observation:", env.observation_space.sample())
 print("Action Space Shape:", env.action_space.n)
 print("Action Space Sample:", env.action_space.sample())
 
-discrete_os_size = [101, 101, 101, 8]
+discrete_os_size = [3, 3, 3, 3]
 action_space = env.action_space.n
 
 # Training parameters
-n_training_episodes = 2000
-learning_rate = 0.0001 
+n_training_episodes = 100
+learning_rate = 0.5
 
 # Evaluation parameters
 n_eval_episodes = 100      
 
 # Environment parameters
 env_id = "RlCar-v0"   
-max_steps = 2000
-gamma = 0.95               
+max_steps = 600
+gamma = 0.9               
 eval_seed = []             
 
 # Exploration parameters
-max_epsilon = 1.0           
+max_epsilon = 0.95           
 min_epsilon = 0.05           
 decay_rate = 0.0005
 
@@ -134,8 +143,21 @@ elif proc == "check":
     with open('q_table.pkl', 'rb') as f:
         Qtable_rlcar = pickle.load(f)
     
-    total_pairs = 101 * 101 * 101 * 8 * 9
-    mask = (Qtable_rlcar != 0.00000000e+00)
-    print(f"There are {len(Qtable_rlcar[mask])}/{total_pairs} state-action pairs that has been explored")
+    state_space = [3, 3, 3, 3]
+    action_space = 3
+    
+    # Print the Q-table in the specified format
+    header = ["Q1", "Q2", "Q3", "k1", "k2", "k3", "k4"]
+    header_str = "{:^8}" * len(header)
+    print(header_str.format(*header))
+
+    for i in range(state_space[0]):
+        for j in range(state_space[1]):
+            for k in range(state_space[2]):
+                for l in range(state_space[3]):
+                    row_values = Qtable_rlcar[i, j, k, l, :]
+                    state_values = [i, j, k, l]
+                    row_str = "{:^8.2f}" * len(row_values) + " | " + "{:^4}" * len(state_values)
+                    print(row_str.format(*row_values, *state_values))
 else:
     print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")
