@@ -8,7 +8,7 @@ import math
 import random
 
 #Constants
-WIDTH, HEIGHT = 350, 350
+WIDTH, HEIGHT = 400, 400
 CAR_RADIUS = 10
 OBS_RADIUS = 20
 CAR_SPEED = 2
@@ -144,7 +144,7 @@ class Car(pygame.sprite.Sprite):
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
-        self.rect.center = (WIDTH // 2, HEIGHT // 2)
+        self.rect.center = (80, HEIGHT // 2)
         self.angle = 0
         self.collided = False
     
@@ -279,24 +279,33 @@ def line_intersection(start1, end1, start2, end2):
 
 # Obstacle class
 class Obstacle(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, radius):
         super().__init__()
-        self.image = pygame.Surface((2 * OBS_RADIUS, 2 * OBS_RADIUS), pygame.SRCALPHA)
-        pygame.draw.circle(self.image, WHITE, (OBS_RADIUS, OBS_RADIUS), OBS_RADIUS)
+        self.image = pygame.Surface((2 * radius, 2 * radius), pygame.SRCALPHA)
+        pygame.draw.circle(self.image, WHITE, (radius, radius), radius)
         self.rect = self.image.get_rect(center=(x, y))
 
 # Function to create obstacles with random positions
-def create_random_obstacles(num_obstacles, all_sprites, car):
+def create_obstacles(num_obstacles, car):
     obstacles = pygame.sprite.Group()
-    for _ in range(num_obstacles):
-        while True:
-            x = random.randint(0, WIDTH)
-            y = random.randint(0, HEIGHT)
+    obstacles.add(Obstacle(200, 0, OBS_RADIUS + 10))
+    obstacles.add(Obstacle(250, 400, OBS_RADIUS + 10))
+    obstacles.add(Obstacle(0, 200, OBS_RADIUS + 10))
+    obstacles.add(Obstacle(400, 200, OBS_RADIUS + 10))
+    obstacles.add(Obstacle(125, 125, OBS_RADIUS + 5))
+    obstacles.add(Obstacle(275, 275, OBS_RADIUS + 5))
+    obstacles.add(Obstacle(125, 275, OBS_RADIUS + 5))
+    obstacles.add(Obstacle(275, 125, OBS_RADIUS + 5))
+    obstacles.add(Obstacle(WIDTH // 2, HEIGHT // 2, OBS_RADIUS))
+    # for _ in range(num_obstacles):
+    #     while True:
+    #         x = random.randint(0, WIDTH)
+    #         y = random.randint(0, HEIGHT)
 
-            obstacle = Obstacle(x, y)
-            if not pygame.sprite.collide_rect(car, obstacle):
-                break
-        obstacles.add(obstacle)
+    #         obstacle = Obstacle(x, y)
+    #         if not pygame.sprite.collide_rect(car, obstacle):
+    #             break
+    #     obstacles.add(obstacle)
 
     return obstacles
 
@@ -309,7 +318,7 @@ CIRCULAR_WALLS = [(WIDTH // 2, HEIGHT // 2, CIRCLE_BORDER_RADIUS)]
 WALLS = CIRCULAR_WALLS  # Use this for collision detection
 
 # Initialize sprites outside the game loop
-obstacles = create_random_obstacles(NUM_OBSTACLE, all_sprites, car)  # Initial number of obstacles
+obstacles = create_obstacles(NUM_OBSTACLE, car)  # Initial number of obstacles
 all_sprites.add(car, *obstacles) 
 
 class RlCarEnv(gym.Env):
