@@ -1,3 +1,2 @@
 .env
-/QLearning/q_table.pkl
 /QLearning/__pycache__/*

@@ -161,3 +161,4 @@ elif proc == "check":
                     print(row_str.format(*row_values, *state_values))
 else:
     print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")
+
