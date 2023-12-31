@@ -50,9 +50,8 @@ class Car(pygame.sprite.Sprite):
         self.collided = False
 
         for obstacle in obstacles:
-            intersection = self.get_circle_circle_intersection(self.rect.center, CAR_RADIUS, obstacle.rect.center, OBS_RADIUS)
+            intersection = self.get_circle_circle_intersection(self.rect.center, CAR_RADIUS, obstacle.rect.center, obstacle.radius)
             if intersection:
-                print("HERE") 
                 self.collided = True
 
         for wall in CIRCULAR_WALLS:
@@ -175,7 +174,7 @@ class Sensor(pygame.sprite.Sprite):
         closest_distance = SENSOR_LENGTH
 
         for obstacle in obstacles:
-            intersection = self.get_line_circle_intersection(self.start_pos, self.end_pos, obstacle.rect.center, OBS_RADIUS)
+            intersection = self.get_line_circle_intersection(self.start_pos, self.end_pos, obstacle.rect.center, obstacle.radius)
             if intersection:
                 # Choose the intersection point closer to the sensor
                 distance1 = math.dist(self.start_pos, intersection[0])
@@ -281,6 +280,7 @@ def line_intersection(start1, end1, start2, end2):
 class Obstacle(pygame.sprite.Sprite):
     def __init__(self, x, y, radius):
         super().__init__()
+        self.radius = radius
         self.image = pygame.Surface((2 * radius, 2 * radius), pygame.SRCALPHA)
         pygame.draw.circle(self.image, WHITE, (radius, radius), radius)
         self.rect = self.image.get_rect(center=(x, y))
