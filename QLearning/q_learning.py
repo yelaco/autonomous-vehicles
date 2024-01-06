@@ -20,11 +20,11 @@ def epsilon_greedy_policy(Qtable, state, epsilon):
     return action
 
 def greedy_policy(Qtable, state):
-    # random_int = random.uniform(0, 1)
-    # if random_int > 0.95:
-    action = np.argmax(Qtable[tuple(state)])
-    # else:
-    #     action = env.action_space.sample()
+    status = Qtable[tuple(state)]
+    if all([s == 0 for s in status]):
+        action = env.action_space.sample()
+    else:
+        action = np.argmax(Qtable[tuple(state)])
     return action
 
 def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable):
@@ -92,11 +92,11 @@ print("Sample observation:", env.observation_space.sample())
 print("Action Space Shape:", env.action_space.n)
 print("Action Space Sample:", env.action_space.sample())
 
-discrete_os_size = [3, 3, 3, 3]
+state_space = env.state_space
 action_space = env.action_space.n
 
 # Training parameters
-n_training_episodes = 100
+n_training_episodes = 15
 learning_rate = 0.5
 
 # Evaluation parameters
@@ -124,7 +124,7 @@ if proc == "train":
             Qtable_rlcar = pickle.load(f) 
     except FileNotFoundError:
         print("[!] No existing q-table found. Initializing a new one")
-        Qtable_rlcar = initialize_q_table(discrete_os_size, action_space)
+        Qtable_rlcar = initialize_q_table(state_space, action_space)
     
     # Start training
     Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable_rlcar)
@@ -143,12 +143,12 @@ elif proc == "check":
     with open('q_table.pkl', 'rb') as f:
         Qtable_rlcar = pickle.load(f)
     
-    state_space = [3, 3, 3, 3]
-    action_space = 3
+    state_space = env.state_space
+    action_space = env.action_space.n
     
     # Print the Q-table in the specified format
-    header = ["Q1", "Q2", "Q3", "k1", "k2", "k3", "k4"]
-    header_str = "{:^8}" * len(header)
+    header = ["Straight", "Left", "Right", "RZ", "LZ", "RS", "LS"]
+    header_str = "{:^8}" * env.action_space.n + " | " + "{:^4}" * len(state_space)
     print(header_str.format(*header))
 
     for i in range(state_space[0]):
@@ -159,6 +159,7 @@ elif proc == "check":
                     state_values = [i, j, k, l]
                     row_str = "{:^8.2f}" * len(row_values) + " | " + "{:^4}" * len(state_values)
                     print(row_str.format(*row_values, *state_values))
+    
 else:
     print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")
 

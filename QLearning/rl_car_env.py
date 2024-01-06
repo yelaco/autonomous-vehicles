@@ -27,7 +27,7 @@ NUM_OBSTACLE = 2
 
 # Reward
 NOT_CRASH = 1
-CRASH = -100
+CRASH = -20
 TURN_PENALTY = 0.1
 
 class Car(pygame.sprite.Sprite):
@@ -39,6 +39,7 @@ class Car(pygame.sprite.Sprite):
         self.speed = CAR_SPEED
         self.angle = 0
         self.collided = False
+        self.initial_pos = (x, y)
 
         # Sensor directions (relative angles)
         # represent left, front, right sensor
@@ -57,7 +58,6 @@ class Car(pygame.sprite.Sprite):
         for wall in CIRCULAR_WALLS:
             intersection = self.get_circle_circle_intersection(self.rect.center, CAR_RADIUS, wall[:2], wall[2])
             if intersection:
-                print("HERE")
                 self.collided = True
 
         # Update sensor positions and distances
@@ -102,48 +102,50 @@ class Car(pygame.sprite.Sprite):
         return intersection1, intersection2
 
     def get_sensor_values(self):
-        k1 = 2
+        # Initial values
+        # Which mean that there are no obstacle in corresponding zones and sectors
+        k1 = 2 
         k2  = 2
-        k3 = 2
-        k4 = 2
+        k3 = 3
+        k4 = 3
         
         distances = [sensor.distance for sensor in self.sensors]
         # check the right side sensor
-        dist = min(distances[0:1])
+        dist = min(distances[0:2])
         if (dist > 40 and dist < 70):
             k1 = 1  #zone 1
-        elif (dist < 40):
+        elif (dist <= 40):
             k1 = 0  #zone 0
 
         # check the left side sensor
         dist = min(distances[1:])
         if (dist > 40 and dist < 70):
             k2 = 1  #zone 1
-        elif (dist < 40):
+        elif (dist <= 40):
             k2 = 0  #zone 0
         
         detected = [distance < 100 for distance in distances]
         # the right sector of the vehicle
-        if detected[1] and not detected[0]:
+        if detected[1] and detected[0]:
             k3 = 0
         elif detected[0] and not detected[1]:
             k3 = 1
-        elif detected[0] and detected[1]:
+        elif detected[1] and not detected[0]:
             k3 = 2
             
         # the left sector of the vehicle
-        if detected[1] and not detected[2]:
+        if detected[1] and detected[2]:
             k4 = 0
         elif detected[2] and not detected[1]:
             k4 = 1
-        elif detected[2] and detected[1]:
+        elif detected[1] and not detected[2]:
             k4 = 2
         # check the left side sendor
         return [k1, k2, k3, k4]
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
-        self.rect.center = (80, HEIGHT // 2)
+        self.rect.center = self.initial_pos
         self.angle = 0
         self.collided = False
     
@@ -286,27 +288,30 @@ class Obstacle(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(x, y))
 
 # Function to create obstacles with random positions
-def create_obstacles(num_obstacles, car):
+def create_obstacles(num_obstacles, car, fixed=False, no_obs=False):
     obstacles = pygame.sprite.Group()
-    obstacles.add(Obstacle(200, 0, OBS_RADIUS + 10))
-    obstacles.add(Obstacle(250, 400, OBS_RADIUS + 10))
-    obstacles.add(Obstacle(0, 200, OBS_RADIUS + 10))
-    obstacles.add(Obstacle(400, 200, OBS_RADIUS + 10))
-    obstacles.add(Obstacle(125, 125, OBS_RADIUS + 5))
-    obstacles.add(Obstacle(275, 275, OBS_RADIUS + 5))
-    obstacles.add(Obstacle(125, 275, OBS_RADIUS + 5))
-    obstacles.add(Obstacle(275, 125, OBS_RADIUS + 5))
-    obstacles.add(Obstacle(WIDTH // 2, HEIGHT // 2, OBS_RADIUS))
-    # for _ in range(num_obstacles):
-    #     while True:
-    #         x = random.randint(0, WIDTH)
-    #         y = random.randint(0, HEIGHT)
+    if (fixed):
+        obstacles.add(Obstacle(200, 0, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(250, 400, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(0, 200, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(400, 200, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(125, 125, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(275, 275, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(125, 275, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(275, 125, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(WIDTH // 2, HEIGHT // 2, OBS_RADIUS))
+    elif no_obs:
+        pass
+    else:
+        for _ in range(num_obstacles):
+            while True:
+                x = random.randint(0, WIDTH)
+                y = random.randint(0, HEIGHT)
 
-    #         obstacle = Obstacle(x, y)
-    #         if not pygame.sprite.collide_rect(car, obstacle):
-    #             break
-    #     obstacles.add(obstacle)
-
+                obstacle = Obstacle(x, y)
+                if not pygame.sprite.collide_rect(car, obstacle):
+                    break
+            obstacles.add(obstacle)
     return obstacles
 
 # Create sprites
@@ -318,7 +323,7 @@ CIRCULAR_WALLS = [(WIDTH // 2, HEIGHT // 2, CIRCLE_BORDER_RADIUS)]
 WALLS = CIRCULAR_WALLS  # Use this for collision detection
 
 # Initialize sprites outside the game loop
-obstacles = create_obstacles(NUM_OBSTACLE, car)  # Initial number of obstacles
+obstacles = create_obstacles(NUM_OBSTACLE, car, fixed=False, no_obs=True)  # Initial number of obstacles
 all_sprites.add(car, *obstacles) 
 
 class RlCarEnv(gym.Env):
@@ -328,8 +333,9 @@ class RlCarEnv(gym.Env):
         # Action |  Straight | Left | Right
         # ==> 3 actions discrete actions
         self.action_space = spaces.Discrete(3)
+        self.state_space = [3, 3, 4, 4]
         low = [0, 0, 0, 0]
-        high = [2, 2, 2, 2]
+        high = [2, 2, 3, 3]
         self.observation_space = spaces.Box(low=np.array(low), high=np.array(high), dtype=np.uint8)
         
         # Initialize Pygame
