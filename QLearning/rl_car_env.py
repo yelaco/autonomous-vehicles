@@ -11,7 +11,7 @@ import random
 WIDTH, HEIGHT = 400, 400
 CAR_RADIUS = 10
 OBS_RADIUS = 20
-CAR_SPEED = 3
+CAR_SPEED = 2
 SENSOR_LENGTH = 100
 FPS = 60
 WHITE = (255, 255, 255)
@@ -27,7 +27,7 @@ NUM_OBSTACLE = 2
 
 # Reward
 NOT_CRASH = 1
-CRASH = -20
+CRASH = -100
 TURN_PENALTY = 0.1
 
 class Car(pygame.sprite.Sprite):
