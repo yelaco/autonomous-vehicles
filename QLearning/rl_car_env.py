@@ -30,6 +30,15 @@ NOT_CRASH = 1
 CRASH = -100
 TURN_PENALTY = 0.1
 
+# Set up fonts
+font_size = 24
+
+# Set up text area
+text_area_width = 250
+text_area_height = 400
+text_area_rect = pygame.Rect(WIDTH + 55, 0, text_area_width, text_area_height)
+text_color = (255, 255, 255)
+
 class Car(pygame.sprite.Sprite):
     def __init__(self, x, y, angle):
         super().__init__()
@@ -342,7 +351,7 @@ CIRCULAR_WALLS = [(WIDTH // 2, HEIGHT // 2, CIRCLE_BORDER_RADIUS)]
 WALLS = CIRCULAR_WALLS  # Use this for collision detection
 
 # Initialize sprites outside the game loop
-obstacles = create_obstacles(NUM_OBSTACLE, car, fixed=False, no_obs=True)  # Initial number of obstacles
+obstacles = create_obstacles(NUM_OBSTACLE, car, fixed=True, no_obs=False)  # Initial number of obstacles
 all_sprites.add(car, *obstacles) 
 
 class RlCarEnv(gym.Env):
@@ -360,8 +369,9 @@ class RlCarEnv(gym.Env):
         # Initialize Pygame
         pygame.init()
 
+        self.font = pygame.font.Font(None, font_size)
         # Initialize screen
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.screen = pygame.display.set_mode((WIDTH + 300, HEIGHT))
         pygame.display.set_caption("RL Car Simulation")
             
         # Game loop
@@ -387,8 +397,7 @@ class RlCarEnv(gym.Env):
         next_obs = np.array(car.get_sensor_values(), dtype=np.int8)
         if hasattr(self, 'current_obs') and not np.array_equal(next_obs, self.current_obs):
             self.last_diff_obs = self.current_obs
-        print(car.get_sensor_values())
-        
+ 
         r1 = 0
         r2 = 0
         r3 = 0
@@ -418,7 +427,12 @@ class RlCarEnv(gym.Env):
         self.current_obs = next_obs
         return next_obs, reward, terminated, False, {}
 
-    def render(self):
+    def render(self, info=""):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return True
+                
         # Update
         all_sprites.update()
 
@@ -429,9 +443,23 @@ class RlCarEnv(gym.Env):
             pygame.draw.circle(self.screen, WALL_COLOR, wall[:2], wall[2], 1)
         for sensor in car.sensors:
             pygame.draw.line(self.screen, YELLOW, sensor.start_pos, sensor.end_pos, 2)
+        pygame.draw.line(self.screen, WHITE, (WIDTH + 50, 0), (WIDTH + 50, HEIGHT), 2) 
+        
+        pygame.draw.rect(self.screen, BLACK, text_area_rect, 2)
+
+        # Render and display the input text
+        lines = info.split('\n')
+        y_offset = 15  # Initial y-offset
+        for line in lines:
+            text_surface = self.font.render(line, True, text_color)
+            text_rect = text_surface.get_rect(topleft=(text_area_rect.left + 10, text_area_rect.top + y_offset))
+            self.screen.blit(text_surface, text_rect)
+            y_offset += font_size + 2
+    
         all_sprites.draw(self.screen)
         pygame.display.flip()
         self.clock.tick(FPS)
+        return False
         
     def close(self):
         # Perform cleanup operations, if needed

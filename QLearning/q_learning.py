@@ -7,6 +7,8 @@ import pickle
 import register_env as register_env
 from rl_car_env import RlCarEnv
 
+actions = ["straight", "left", "right"]
+
 def initialize_q_table(state_space, action_space):
     Qtable = np.zeros((state_space + [action_space])) 
     return Qtable
@@ -29,6 +31,7 @@ def greedy_policy(Qtable, state):
 
 def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable):
     state_changed = False
+    total_crash = 0
     for episode in range(n_training_episodes):
         epsilon = min_epsilon + (max_epsilon - min_epsilon)*np.exp(-decay_rate*episode)
         #Reset the environment
@@ -38,14 +41,14 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
 
         # repeat
         for step in range(max_steps):
-            print(f"Episode {episode}/{n_training_episodes} step {step}")
             if state_changed: 
-                action = greedy_policy(Qtable, state)
+                action = epsilon_greedy_policy(Qtable, state, epsilon)
                 last_action = action
             else:
                 action = last_action
             new_state, reward, terminated, _, _ = env.step(action) # Terminated, Truncated, Info are not needed
-            env.render()
+            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[0]}    RX: {state[1]}    Reward: {'{:.2f}'.format(reward)}\nOL: {state[5]}    IL: {state[4]}    IR: {state[3]}    OR: {state[2]}\nAction:  {actions[action]}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_eval_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
+            if quit: return Qtable
 
             # custom indexing for state and action 
             state_action = tuple(np.append(state, action))
@@ -54,6 +57,7 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
             Qtable[state_action] = Qtable[state_action] + learning_rate * (reward + gamma * np.max(Qtable[new_state_action]) - Qtable[state_action])
             
             if terminated:
+                total_crash += 1
                 break
             
             if any(new_state != state):
@@ -67,24 +71,27 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
 
 def evaluate_agent(env, max_steps, n_eval_episodes, Q):
     episode_rewards = []
+    mean_reward = 0
+    total_crash = 0
     for episode in range(n_eval_episodes):
         state = env.reset()
         total_rewards_ep = 0
     
         for step in range(max_steps):
-            env.render()
-            # Take the action (index) that have the maximum reward
-            print(f"Episode {episode}/{n_eval_episodes} step {step}")
             action = greedy_policy(Q, state)
-            new_state, reward, terminated, _, _= env.step(action)
+            new_state, reward, terminated, _, info = env.step(action)
+            total_rewards_ep += reward
             
+            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[0]}    RX: {state[1]}    Reward: {'{:.2f}'.format(reward)}\nOL: {state[5]}    IL: {state[4]}    IR: {state[3]}    OR: {state[2]}\nAction:  {actions[action]}\nCrash: {total_crash}\n\nMode: Evaluate\nMax episodes: {n_eval_episodes}\nMax steps: {max_steps}\nTotal reward: {'{:.2f}'.format(total_rewards_ep)}\nMean reward: {'{:.2f}'.format(mean_reward)}")
+            if quit: return np.mean(episode_rewards),  np.std(episode_rewards)
             if terminated:
+                total_crash += 1
                 break
             
             state = new_state
-            total_rewards_ep += reward
         
         episode_rewards.append(total_rewards_ep)
+        mean_reward = np.mean(episode_rewards)
     env.close()
     mean_reward = np.mean(episode_rewards)
     std_reward = np.std(episode_rewards)
@@ -106,7 +113,7 @@ state_space = env.state_space
 action_space = env.action_space.n
 
 # Training parameters
-n_training_episodes = 300
+n_training_episodes = 100
 learning_rate = 0.5
 
 # Evaluation parameters
@@ -121,7 +128,7 @@ eval_seed = []
 # Exploration parameters
 max_epsilon = 0.95           
 min_epsilon = 0.05           
-decay_rate = 0.01
+decay_rate = 0.05
 
 if len(sys.argv) == 1:
     print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")
@@ -147,7 +154,7 @@ elif proc == "evaluate":
         Qtable_rlcar = pickle.load(f)
 
     # Evaluate our Agent
-    mean_reward, std_reward = evaluate_agent(env, max_steps, n_eval_episodes, Qtable_rlcar)
+    mean_reward, std_reward = evaluate_agent(env, max_steps + 400, n_eval_episodes, Qtable_rlcar)
     print(f"Mean_reward={mean_reward:.2f} +/- {std_reward:.2f}")
 elif proc == "check":
     with open('q_table.pkl', 'rb') as f:
