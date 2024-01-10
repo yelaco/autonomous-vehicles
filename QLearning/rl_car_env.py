@@ -342,7 +342,7 @@ CIRCULAR_WALLS = [(WIDTH // 2, HEIGHT // 2, CIRCLE_BORDER_RADIUS)]
 WALLS = CIRCULAR_WALLS  # Use this for collision detection
 
 # Initialize sprites outside the game loop
-obstacles = create_obstacles(NUM_OBSTACLE, car, fixed=True, no_obs=False)  # Initial number of obstacles
+obstacles = create_obstacles(NUM_OBSTACLE, car, fixed=False, no_obs=True)  # Initial number of obstacles
 all_sprites.add(car, *obstacles) 
 
 class RlCarEnv(gym.Env):
@@ -362,7 +362,7 @@ class RlCarEnv(gym.Env):
 
         # Initialize screen
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption("Autonomous Car Simulation")
+        pygame.display.set_caption("RL Car Simulation")
             
         # Game loop
         self.clock = pygame.time.Clock()
@@ -384,7 +384,9 @@ class RlCarEnv(gym.Env):
         car.rect.x += speed * math.cos(math.radians(car.angle))
         car.rect.y -= speed * math.sin(math.radians(car.angle))
 
-        next_obs = np.array(car.get_sensor_values(), dtype=np.uint8)
+        next_obs = np.array(car.get_sensor_values(), dtype=np.int8)
+        if hasattr(self, 'current_obs') and not np.array_equal(next_obs, self.current_obs):
+            self.last_diff_obs = self.current_obs
         print(car.get_sensor_values())
         
         r1 = 0
@@ -397,15 +399,13 @@ class RlCarEnv(gym.Env):
         if car.collided:
             terminated = True 
             reward = CRASH
-            if hasattr(self, 'prev_action') and self.prev_action == 0 and action != 0:
-                return self.current_obs, reward, terminated, False, {} 
         else:
             if action == 1 or action == 2:
                r1 = -0.1
             else:
                 r1 = 0.2 
             
-            if hasattr(self, 'current_obs') and sum(next_obs - self.current_obs) >= 0:
+            if hasattr(self, 'last_diff_obs') and sum(next_obs - self.last_diff_obs) >= 0:
                 r2 = 0.2
             else:
                 r2 = -0.2            
@@ -436,7 +436,3 @@ class RlCarEnv(gym.Env):
     def close(self):
         # Perform cleanup operations, if needed
         pygame.quit()
-    
-    def seed(self, seed=None):
-        self.np_random, seed = gym.utils.seeding.np_random(seed)
-        return [seed]
