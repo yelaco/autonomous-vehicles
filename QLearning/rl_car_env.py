@@ -9,7 +9,7 @@ import random
 
 #Constants
 WIDTH, HEIGHT = 400, 400
-CAR_RADIUS = 10
+CAR_RADIUS = 9
 OBS_RADIUS = 20
 CAR_SPEED = 2
 SENSOR_LENGTH = 100
@@ -31,19 +31,20 @@ CRASH = -100
 TURN_PENALTY = 0.1
 
 class Car(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, angle):
         super().__init__()
         self.image = pygame.Surface((2 * CAR_RADIUS, 2 * CAR_RADIUS), pygame.SRCALPHA)
         pygame.draw.circle(self.image, WHITE, (CAR_RADIUS, CAR_RADIUS), CAR_RADIUS)
         self.rect = self.image.get_rect(center=(x, y))
         self.speed = CAR_SPEED
-        self.angle = 0
+        self.angle = angle
         self.collided = False
+        self.initial_angle = angle
         self.initial_pos = (x, y)
 
         # Sensor directions (relative angles)
         # represent left, front, right sensor
-        self.sensor_angles = [-45, 0, 45]
+        self.sensor_angles = [-60, -30, 0, 30, 60]
         self.sensors = [Sensor(self.rect.center, angle) for angle in self.sensor_angles]
 
     def update(self):
@@ -108,45 +109,63 @@ class Car(pygame.sprite.Sprite):
         k2  = 2
         k3 = 3
         k4 = 3
+        k5 = 3
+        k6 = 3
         
         distances = [sensor.distance for sensor in self.sensors]
         # check the right side sensor
-        dist = min(distances[0:2])
+        dist = min(distances[0:3])
         if (dist > 40 and dist < 70):
             k1 = 1  #zone 1
         elif (dist <= 40):
             k1 = 0  #zone 0
 
         # check the left side sensor
-        dist = min(distances[1:])
+        dist = min(distances[2:])
         if (dist > 40 and dist < 70):
             k2 = 1  #zone 1
         elif (dist <= 40):
             k2 = 0  #zone 0
         
         detected = [distance < 100 for distance in distances]
-        # the right sector of the vehicle
-        if detected[1] and detected[0]:
+        # the outer right sector of the vehicle
+        if detected[0] and detected[1]:
             k3 = 0
-        elif detected[0] and not detected[1]:
+        elif detected[1] and not detected[0]: # xor
             k3 = 1
-        elif detected[1] and not detected[0]:
+        elif detected[0] and not detected[1]:
             k3 = 2
             
-        # the left sector of the vehicle
+        # the inner right sector of the vehicle
         if detected[1] and detected[2]:
             k4 = 0
-        elif detected[2] and not detected[1]:
+        elif detected[2] and not detected[1]: # xor
             k4 = 1
         elif detected[1] and not detected[2]:
             k4 = 2
-        # check the left side sendor
-        return [k1, k2, k3, k4]
+        
+        # the inner left sector of the vehicle
+        if detected[2] and detected[3]:
+            k5 = 0
+        elif detected[2] and not detected[3]: # xor
+            k5 = 1
+        elif detected[3] and not detected[2]:
+            k5 = 2
+        
+        # the outer left sector of the vehicle
+        if detected[3] and detected[4]:
+            k6 = 0
+        elif detected[3] and not detected[4]: # xor
+            k6 = 1
+        elif detected[4] and not detected[3]:
+            k6 = 2
+            
+        return [k1, k2, k3, k4, k5, k6]
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
         self.rect.center = self.initial_pos
-        self.angle = 0
+        self.angle = self.initial_angle
         self.collided = False
     
 # Sensor class
@@ -292,7 +311,7 @@ def create_obstacles(num_obstacles, car, fixed=False, no_obs=False):
     obstacles = pygame.sprite.Group()
     if (fixed):
         obstacles.add(Obstacle(200, 0, OBS_RADIUS + 10))
-        obstacles.add(Obstacle(250, 400, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(200, 400, OBS_RADIUS + 10))
         obstacles.add(Obstacle(0, 200, OBS_RADIUS + 10))
         obstacles.add(Obstacle(400, 200, OBS_RADIUS + 10))
         obstacles.add(Obstacle(125, 125, OBS_RADIUS + 5))
@@ -308,7 +327,7 @@ def create_obstacles(num_obstacles, car, fixed=False, no_obs=False):
                 x = random.randint(0, WIDTH)
                 y = random.randint(0, HEIGHT)
 
-                obstacle = Obstacle(x, y)
+                obstacle = Obstacle(x, y, OBS_RADIUS)
                 if not pygame.sprite.collide_rect(car, obstacle):
                     break
             obstacles.add(obstacle)
@@ -316,14 +335,14 @@ def create_obstacles(num_obstacles, car, fixed=False, no_obs=False):
 
 # Create sprites
 all_sprites = pygame.sprite.Group()
-car = Car(WIDTH // 2, HEIGHT // 2)
+car = Car(x=WIDTH // 2 - 150, y=HEIGHT // 2, angle=0)
 
 # Initialize circular walls
 CIRCULAR_WALLS = [(WIDTH // 2, HEIGHT // 2, CIRCLE_BORDER_RADIUS)]
 WALLS = CIRCULAR_WALLS  # Use this for collision detection
 
 # Initialize sprites outside the game loop
-obstacles = create_obstacles(NUM_OBSTACLE, car, fixed=False, no_obs=True)  # Initial number of obstacles
+obstacles = create_obstacles(NUM_OBSTACLE, car, fixed=True, no_obs=False)  # Initial number of obstacles
 all_sprites.add(car, *obstacles) 
 
 class RlCarEnv(gym.Env):
@@ -333,9 +352,9 @@ class RlCarEnv(gym.Env):
         # Action |  Straight | Left | Right
         # ==> 3 actions discrete actions
         self.action_space = spaces.Discrete(3)
-        self.state_space = [3, 3, 4, 4]
-        low = [0, 0, 0, 0]
-        high = [2, 2, 3, 3]
+        self.state_space = [3, 3, 4, 4, 4, 4]
+        low = [0, 0, 0, 0, 0, 0]
+        high = [2, 2, 3, 3, 3, 3]
         self.observation_space = spaces.Box(low=np.array(low), high=np.array(high), dtype=np.uint8)
         
         # Initialize Pygame
@@ -357,9 +376,9 @@ class RlCarEnv(gym.Env):
     def step(self, action):
         speed = car.speed - 1
         if action == 1:
-            car.angle += 5
+            car.angle += 2
         elif action == 2:
-            car.angle -= 5
+            car.angle -= 2
         else:
             speed = car.speed
         car.rect.x += speed * math.cos(math.radians(car.angle))
@@ -376,8 +395,10 @@ class RlCarEnv(gym.Env):
         
         # Collision detection 
         if car.collided:
+            terminated = True 
             reward = CRASH
-            terminated = True
+            if hasattr(self, 'prev_action') and self.prev_action == 0 and action != 0:
+                return self.current_obs, reward, terminated, False, {} 
         else:
             if action == 1 or action == 2:
                r1 = -0.1
@@ -397,7 +418,7 @@ class RlCarEnv(gym.Env):
         self.current_obs = next_obs
         return next_obs, reward, terminated, False, {}
 
-    def render(self, mode='human'):
+    def render(self):
         # Update
         all_sprites.update()
 

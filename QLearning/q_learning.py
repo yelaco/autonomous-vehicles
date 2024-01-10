@@ -28,16 +28,22 @@ def greedy_policy(Qtable, state):
     return action
 
 def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable):
+    state_changed = False
     for episode in range(n_training_episodes):
         epsilon = min_epsilon + (max_epsilon - min_epsilon)*np.exp(-decay_rate*episode)
         #Reset the environment
         state = env.reset()
         terminated = False
+        last_action = epsilon_greedy_policy(Qtable, state, epsilon)
 
         # repeat
         for step in range(max_steps):
             print(f"Episode {episode}/{n_training_episodes} step {step}")
-            action = epsilon_greedy_policy(Qtable, state, epsilon)
+            if state_changed: 
+                action = greedy_policy(Qtable, state)
+                last_action = action
+            else:
+                action = last_action
             new_state, reward, terminated, _, _ = env.step(action) # Terminated, Truncated, Info are not needed
             env.render()
 
@@ -50,8 +56,12 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
             if terminated:
                 break
             
-            state = new_state
-            
+            if any(new_state != state):
+                state = new_state
+                state_changed = True
+            else:
+                state_changed = False
+                 
     env.close()
     return Qtable
 
@@ -96,7 +106,7 @@ state_space = env.state_space
 action_space = env.action_space.n
 
 # Training parameters
-n_training_episodes = 15
+n_training_episodes = 300
 learning_rate = 0.5
 
 # Evaluation parameters
@@ -104,14 +114,14 @@ n_eval_episodes = 100
 
 # Environment parameters
 env_id = "RlCar-v0"   
-max_steps = 600
+max_steps = 800
 gamma = 0.9               
 eval_seed = []             
 
 # Exploration parameters
 max_epsilon = 0.95           
 min_epsilon = 0.05           
-decay_rate = 0.0005
+decay_rate = 0.01
 
 if len(sys.argv) == 1:
     print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")
@@ -147,7 +157,7 @@ elif proc == "check":
     action_space = env.action_space.n
     
     # Print the Q-table in the specified format
-    header = ["Straight", "Left", "Right", "RZ", "LZ", "RS", "LS"]
+    header = ["Straight", "Left", "Right", "RZ", "LZ", "ORS", "IRS", "ILS", "OLS"]
     header_str = "{:^8}" * env.action_space.n + " | " + "{:^4}" * len(state_space)
     print(header_str.format(*header))
 
@@ -155,10 +165,12 @@ elif proc == "check":
         for j in range(state_space[1]):
             for k in range(state_space[2]):
                 for l in range(state_space[3]):
-                    row_values = Qtable_rlcar[i, j, k, l, :]
-                    state_values = [i, j, k, l]
-                    row_str = "{:^8.2f}" * len(row_values) + " | " + "{:^4}" * len(state_values)
-                    print(row_str.format(*row_values, *state_values))
+                    for m in range(state_space[4]):
+                        for n in range(state_space[5]):
+                            row_values = Qtable_rlcar[i, j, k, l, m, n, :]
+                            state_values = [i, j, k, l, m, n]
+                            row_str = "{:^8.2f}" * len(row_values) + " | " + "{:^4}" * len(state_values)
+                            print(row_str.format(*row_values, *state_values))
     
 else:
     print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")
