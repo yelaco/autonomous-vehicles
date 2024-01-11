@@ -47,7 +47,7 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
             else:
                 action = last_action
             new_state, reward, terminated, _, _ = env.step(action) # Terminated, Truncated, Info are not needed
-            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[1]}    RZ: {state[0]}    Reward: {'{:.2f}'.format(reward)}\nOL: {state[5]}    IL: {state[4]}    IR: {state[3]}    OR: {state[2]}\nAction:  {actions[action]}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_eval_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
+            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[1]}    RZ: {state[0]}    Reward: {'{:.2f}'.format(reward)}\nOL: {state[5]}    IL: {state[4]}    IR: {state[3]}    OR: {state[2]}\nAction:  {actions[action]}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_training_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
             if quit: return Qtable
 
             # custom indexing for state and action 
@@ -113,7 +113,7 @@ state_space = env.state_space
 action_space = env.action_space.n
 
 # Training parameters
-n_training_episodes = 100
+n_training_episodes = 300
 learning_rate = 0.5
 
 # Evaluation parameters
@@ -121,14 +121,14 @@ n_eval_episodes = 100
 
 # Environment parameters
 env_id = "RlCar-v0"   
-max_steps = 800
+max_steps = 2000
 gamma = 0.9               
 eval_seed = []             
 
 # Exploration parameters
 max_epsilon = 0.95           
 min_epsilon = 0.05           
-decay_rate = 0.05
+decay_rate = 0.02
 
 if len(sys.argv) == 1:
     print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")

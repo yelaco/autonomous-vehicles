@@ -53,7 +53,7 @@ class Car(pygame.sprite.Sprite):
 
         # Sensor directions (relative angles)
         # represent left, front, right sensor
-        self.sensor_angles = [-60, -30, 0, 30, 60]
+        self.sensor_angles = [-45, -22.5, 0, 22.5, 45]
         self.sensors = [Sensor(self.rect.center, angle) for angle in self.sensor_angles]
 
     def update(self):
@@ -386,9 +386,9 @@ class RlCarEnv(gym.Env):
     def step(self, action):
         speed = car.speed - 1
         if action == 1:
-            car.angle += 2
+            car.angle += 5
         elif action == 2:
-            car.angle -= 2
+            car.angle -= 5
         else:
             speed = car.speed
         car.rect.x += speed * math.cos(math.radians(car.angle))
