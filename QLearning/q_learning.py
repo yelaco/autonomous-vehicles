@@ -47,7 +47,7 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
             else:
                 action = last_action
             new_state, reward, terminated, _, _ = env.step(action) # Terminated, Truncated, Info are not needed
-            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[0]}    RX: {state[1]}    Reward: {'{:.2f}'.format(reward)}\nOL: {state[5]}    IL: {state[4]}    IR: {state[3]}    OR: {state[2]}\nAction:  {actions[action]}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_eval_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
+            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[1]}    RZ: {state[0]}    Reward: {'{:.2f}'.format(reward)}\nOL: {state[5]}    IL: {state[4]}    IR: {state[3]}    OR: {state[2]}\nAction:  {actions[action]}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_eval_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
             if quit: return Qtable
 
             # custom indexing for state and action 

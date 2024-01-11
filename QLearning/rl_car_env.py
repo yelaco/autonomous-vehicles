@@ -140,7 +140,7 @@ class Car(pygame.sprite.Sprite):
         # the outer right sector of the vehicle
         if detected[0] and detected[1]:
             k3 = 0
-        elif detected[1] and not detected[0]: # xor
+        elif detected[1] and not detected[0]: 
             k3 = 1
         elif detected[0] and not detected[1]:
             k3 = 2
@@ -148,7 +148,7 @@ class Car(pygame.sprite.Sprite):
         # the inner right sector of the vehicle
         if detected[1] and detected[2]:
             k4 = 0
-        elif detected[2] and not detected[1]: # xor
+        elif detected[2] and not detected[1]:
             k4 = 1
         elif detected[1] and not detected[2]:
             k4 = 2
@@ -156,7 +156,7 @@ class Car(pygame.sprite.Sprite):
         # the inner left sector of the vehicle
         if detected[2] and detected[3]:
             k5 = 0
-        elif detected[2] and not detected[3]: # xor
+        elif detected[2] and not detected[3]:
             k5 = 1
         elif detected[3] and not detected[2]:
             k5 = 2
@@ -164,7 +164,7 @@ class Car(pygame.sprite.Sprite):
         # the outer left sector of the vehicle
         if detected[3] and detected[4]:
             k6 = 0
-        elif detected[3] and not detected[4]: # xor
+        elif detected[3] and not detected[4]: 
             k6 = 1
         elif detected[4] and not detected[3]:
             k6 = 2
