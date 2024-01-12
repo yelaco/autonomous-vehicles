@@ -36,7 +36,7 @@ font_size = 24
 # Set up text area
 text_area_width = 250
 text_area_height = 400
-text_area_rect = pygame.Rect(WIDTH + 55, 0, text_area_width, text_area_height)
+text_area_rect = pygame.Rect(WIDTH + 70, HEIGHT - 55, text_area_width, text_area_height)
 text_color = (255, 255, 255)
 
 class Car(pygame.sprite.Sprite):
@@ -315,10 +315,29 @@ class Obstacle(pygame.sprite.Sprite):
         pygame.draw.circle(self.image, WHITE, (radius, radius), radius)
         self.rect = self.image.get_rect(center=(x, y))
 
+class MovingObstacle(Obstacle):
+    def __init__(self, radius, moving_radius, angular_speed, clockwise=True):
+        super().__init__(WIDTH // 2 + int(moving_radius * math.cos(0)), HEIGHT // 2 + int(moving_radius * math.sin(0)), radius)
+        self.image = pygame.Surface((2 * radius, 2 * radius), pygame.SRCALPHA)
+        pygame.draw.circle(self.image, (214, 6, 27), (radius, radius), radius)
+        self.moving_radius = moving_radius 
+        self.angular_speed = angular_speed
+        self.angle = 0
+        self.clockwise = clockwise
+
+    def update(self):
+        if self.clockwise: 
+            self.angle -= math.radians(self.angular_speed)
+        else:
+            self.angle += math.radians(self.angular_speed)
+        self.rect.x = WIDTH // 2 + int(self.moving_radius * math.cos(self.angle))
+        self.rect.y = HEIGHT // 2 + int(self.moving_radius * math.sin(self.angle))
+         
+    
 # Function to create obstacles with random positions
-def create_obstacles(num_obstacles, car, fixed=False, no_obs=False):
+def create_obstacles(num_obstacles, car, map='none'):
     obstacles = pygame.sprite.Group()
-    if (fixed):
+    if map == 'static_fixed':
         obstacles.add(Obstacle(200, 0, OBS_RADIUS + 10))
         obstacles.add(Obstacle(200, 400, OBS_RADIUS + 10))
         obstacles.add(Obstacle(0, 200, OBS_RADIUS + 10))
@@ -328,9 +347,7 @@ def create_obstacles(num_obstacles, car, fixed=False, no_obs=False):
         obstacles.add(Obstacle(125, 275, OBS_RADIUS + 5))
         obstacles.add(Obstacle(275, 125, OBS_RADIUS + 5))
         obstacles.add(Obstacle(WIDTH // 2, HEIGHT // 2, OBS_RADIUS))
-    elif no_obs:
-        pass
-    else:
+    elif map == 'static_random':
         for _ in range(num_obstacles):
             while True:
                 x = random.randint(0, WIDTH)
@@ -340,6 +357,11 @@ def create_obstacles(num_obstacles, car, fixed=False, no_obs=False):
                 if not pygame.sprite.collide_rect(car, obstacle):
                     break
             obstacles.add(obstacle)
+    elif map == 'dynamic':
+        obstacles.add(MovingObstacle(OBS_RADIUS - 5, 50, 0.5, clockwise=False))
+        obstacles.add(MovingObstacle(OBS_RADIUS - 5, 150, 0.5))
+    else:
+        pass
     return obstacles
 
 # Create sprites
@@ -351,7 +373,7 @@ CIRCULAR_WALLS = [(WIDTH // 2, HEIGHT // 2, CIRCLE_BORDER_RADIUS)]
 WALLS = CIRCULAR_WALLS  # Use this for collision detection
 
 # Initialize sprites outside the game loop
-obstacles = create_obstacles(NUM_OBSTACLE, car, fixed=True, no_obs=False)  # Initial number of obstacles
+obstacles = create_obstacles(NUM_OBSTACLE, car, map='static_fixed')  # Initial number of obstacles
 all_sprites.add(car, *obstacles) 
 
 class RlCarEnv(gym.Env):
@@ -369,9 +391,14 @@ class RlCarEnv(gym.Env):
         # Initialize Pygame
         pygame.init()
 
+        # Load eval graph image
+        self.image_path = 'evaluate.png'
+        self.update_eval_graph()
+
+
         self.font = pygame.font.Font(None, font_size)
         # Initialize screen
-        self.screen = pygame.display.set_mode((WIDTH + 300, HEIGHT))
+        self.screen = pygame.display.set_mode((WIDTH + self.image.get_width() + 50, HEIGHT + 300))
         pygame.display.set_caption("RL Car Simulation")
             
         # Game loop
@@ -426,13 +453,17 @@ class RlCarEnv(gym.Env):
         self.prev_action = action
         self.current_obs = next_obs
         return next_obs, reward, terminated, False, {}
+    
+    def update_eval_graph(self):
+        self.image = pygame.image.load(self.image_path)
+        self.image_rect = self.image.get_rect(topleft=(WIDTH + 50, 0))
 
-    def render(self, info=""):
+    def render(self, info="", reload=False):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return True
-                
+            
         # Update
         all_sprites.update()
 
@@ -443,7 +474,7 @@ class RlCarEnv(gym.Env):
             pygame.draw.circle(self.screen, WALL_COLOR, wall[:2], wall[2], 1)
         for sensor in car.sensors:
             pygame.draw.line(self.screen, YELLOW, sensor.start_pos, sensor.end_pos, 2)
-        pygame.draw.line(self.screen, WHITE, (WIDTH + 50, 0), (WIDTH + 50, HEIGHT), 2) 
+        pygame.draw.line(self.screen, WHITE, (WIDTH + 50, 0), (WIDTH + 50, HEIGHT + 300), 2) 
         
         pygame.draw.rect(self.screen, BLACK, text_area_rect, 2)
 
@@ -455,6 +486,9 @@ class RlCarEnv(gym.Env):
             text_rect = text_surface.get_rect(topleft=(text_area_rect.left + 10, text_area_rect.top + y_offset))
             self.screen.blit(text_surface, text_rect)
             y_offset += font_size + 2
+        
+        # Render image
+        self.screen.blit(self.image, self.image_rect)
     
         all_sprites.draw(self.screen)
         pygame.display.flip()
