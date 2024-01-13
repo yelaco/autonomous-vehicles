@@ -90,7 +90,7 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
             new_state, reward, terminated, _, _ = env.step(action) # Terminated, Truncated, Info are not needed
             total_rewards_ep += reward
 
-            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[1]}    RZ: {state[0]}    OL: {state[5]}    IL: {state[4]}    IR: {state[3]}    OR: {state[2]}\nAction:  {actions[action]}\nReward: {'{:.2f}'.format(reward)}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_training_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
+            quit = env.render(f"Episode: {episode}        Step: {step}\nL2: {state[4]}    L1: {state[3]}    F0: {state[2]}    R1: {state[1]}    R2: {state[0]}\nAction:  {actions[action]}\nReward: {'{:.2f}'.format(reward)}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_training_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
             if quit: return Qtable
 
             # custom indexing for state and action 
@@ -99,16 +99,16 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
 
             Qtable[state_action] = Qtable[state_action] + learning_rate * (reward + gamma * np.max(Qtable[new_state_action]) - Qtable[state_action])
             
-            if terminated:
-                total_crash += 1
-                break
-            
             if any(new_state != state):
                 state = new_state
                 state_changed = True
             else:
                 state_changed = False
-                
+            
+            if terminated:
+                total_crash += 1
+                break
+        
         episode_rewards.append(total_rewards_ep)
         
         if episode > 0 and episode % 5 == 0:
@@ -133,7 +133,7 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q):
             new_state, reward, terminated, _, info = env.step(action)
             total_rewards_ep += reward
             
-            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[0]}    RX: {state[1]}    Reward: {'{:.2f}'.format(reward)}\nOL: {state[5]}    IL: {state[4]}    IR: {state[3]}    OR: {state[2]}\nAction:  {actions[action]}\nCrash: {total_crash}\n\nMode: Evaluate\nMax episodes: {n_eval_episodes}\nMax steps: {max_steps}\nTotal reward: {'{:.2f}'.format(total_rewards_ep)}\nMean reward: {'{:.2f}'.format(mean_reward)}")
+            quit = env.render(f"Episode: {episode}        Step: {step}\nL2: {state[4]}    L1: {state[3]}    F0: {state[2]}    R1: {state[1]}    R2: {state[0]}\nAction:  {actions[action]}    Reward: {'{:.2f}'.format(reward)}\nCrash: {total_crash}\n\nMode: Evaluate\nMax episodes: {n_eval_episodes}\nMax steps: {max_steps}\nTotal reward: {'{:.2f}'.format(total_rewards_ep)}\nMean reward: {'{:.2f}'.format(mean_reward)}")
             if quit: return np.mean(episode_rewards),  np.std(episode_rewards)
             if terminated:
                 total_crash += 1
@@ -179,7 +179,7 @@ eval_seed = []
 # Exploration parameters
 max_epsilon = 0.95           
 min_epsilon = 0.05           
-decay_rate = 0.01
+decay_rate = 0.005
 
 if len(sys.argv) == 1:
     print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")

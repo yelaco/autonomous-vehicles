@@ -8,8 +8,8 @@ import math
 import random
 
 #Constants
-WIDTH, HEIGHT = 400, 400
-CAR_RADIUS = 9
+WIDTH, HEIGHT = 500, 500
+CAR_RADIUS = 15
 OBS_RADIUS = 20
 CAR_SPEED = 2
 SENSOR_LENGTH = 100
@@ -53,13 +53,13 @@ class Car(pygame.sprite.Sprite):
 
         # Sensor directions (relative angles)
         # represent left, front, right sensor
-        self.sensor_angles = [-45, -22.5, 0, 22.5, 45]
+        self.sensor_angles = [-50, -25, 0, 25, 50]
         self.sensors = [Sensor(self.rect.center, angle) for angle in self.sensor_angles]
 
     def update(self):
         # Check for collisions with obstacles and walls
         self.collided = False
-
+        
         for obstacle in obstacles:
             intersection = self.get_circle_circle_intersection(self.rect.center, CAR_RADIUS, obstacle.rect.center, obstacle.radius)
             if intersection:
@@ -114,68 +114,26 @@ class Car(pygame.sprite.Sprite):
     def get_sensor_values(self):
         # Initial values
         # Which mean that there are no obstacle in corresponding zones and sectors
-        k1 = 2 
-        k2  = 2
-        k3 = 3
-        k4 = 3
-        k5 = 3
-        k6 = 3
+        state = [2, 2, 2, 2, 2]
         
-        distances = [sensor.distance for sensor in self.sensors]
-        # check the right side sensor
-        dist = min(distances[0:3])
-        if (dist > 40 and dist < 70):
-            k1 = 1  #zone 1
-        elif (dist <= 40):
-            k1 = 0  #zone 0
-
-        # check the left side sensor
-        dist = min(distances[2:])
-        if (dist > 40 and dist < 70):
-            k2 = 1  #zone 1
-        elif (dist <= 40):
-            k2 = 0  #zone 0
+        distances = [sensor.distance if sensor.distance >= 0 else 0 for sensor in self.sensors]
+        if any([dist == 0 for dist in distances]):
+            self.collided = True
         
-        detected = [distance < 100 for distance in distances]
-        # the outer right sector of the vehicle
-        if detected[0] and detected[1]:
-            k3 = 0
-        elif detected[1] and not detected[0]: 
-            k3 = 1
-        elif detected[0] and not detected[1]:
-            k3 = 2
-            
-        # the inner right sector of the vehicle
-        if detected[1] and detected[2]:
-            k4 = 0
-        elif detected[2] and not detected[1]:
-            k4 = 1
-        elif detected[1] and not detected[2]:
-            k4 = 2
+        for i, dist in enumerate(distances):
+            if dist > 40 and dist < 70:
+                state[i] = 1 
+            elif dist <= 40:
+                state[i] = 0
         
-        # the inner left sector of the vehicle
-        if detected[2] and detected[3]:
-            k5 = 0
-        elif detected[2] and not detected[3]:
-            k5 = 1
-        elif detected[3] and not detected[2]:
-            k5 = 2
-        
-        # the outer left sector of the vehicle
-        if detected[3] and detected[4]:
-            k6 = 0
-        elif detected[3] and not detected[4]: 
-            k6 = 1
-        elif detected[4] and not detected[3]:
-            k6 = 2
-            
-        return [k1, k2, k3, k4, k5, k6]
+     
+        return state
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
         self.rect.center = self.initial_pos
         self.angle = self.initial_angle
-        self.collided = False
+        self.update()
     
 # Sensor class
 class Sensor(pygame.sprite.Sprite):
@@ -194,8 +152,8 @@ class Sensor(pygame.sprite.Sprite):
         # Calculate sensor position based on car's center and angle
         angle = math.radians(car_angle + self.angle_offset)
         self.end_pos = (
-            int(car_center[0] + SENSOR_LENGTH * math.cos(angle)),
-            int(car_center[1] - SENSOR_LENGTH * math.sin(angle))
+            int(car_center[0] + (SENSOR_LENGTH + CAR_RADIUS) * math.cos(angle)),
+            int(car_center[1] - (SENSOR_LENGTH + CAR_RADIUS) * math.sin(angle))
         )
         self.rect.topleft = car_center
 
@@ -207,8 +165,8 @@ class Sensor(pygame.sprite.Sprite):
             intersection = self.get_line_circle_intersection(self.start_pos, self.end_pos, obstacle.rect.center, obstacle.radius)
             if intersection:
                 # Choose the intersection point closer to the sensor
-                distance1 = math.dist(self.start_pos, intersection[0])
-                distance2 = math.dist(self.start_pos, intersection[1])
+                distance1 = math.dist(self.start_pos, intersection[0]) - CAR_RADIUS
+                distance2 = math.dist(self.start_pos, intersection[1]) - CAR_RADIUS
                 distance = min(distance1, distance2)
 
                 if distance < closest_distance:
@@ -219,8 +177,8 @@ class Sensor(pygame.sprite.Sprite):
             intersection = self.get_line_circle_intersection(self.start_pos, self.end_pos, wall[:2], wall[2])
             if intersection:
                 # Choose the intersection point closer to the sensor
-                distance1 = math.dist(self.start_pos, intersection[0])
-                distance2 = math.dist(self.start_pos, intersection[1])
+                distance1 = math.dist(self.start_pos, intersection[0]) - CAR_RADIUS
+                distance2 = math.dist(self.start_pos, intersection[1]) - CAR_RADIUS
                 distance = min(distance1, distance2)
 
                 if distance < closest_distance:
@@ -228,7 +186,7 @@ class Sensor(pygame.sprite.Sprite):
                     closest_obstacle = wall
                     
         if closest_obstacle:
-            self.distance = abs(int(closest_distance - CAR_RADIUS))
+            self.distance = int(closest_distance)
         else:
             self.distance = SENSOR_LENGTH
 
@@ -338,14 +296,15 @@ class MovingObstacle(Obstacle):
 def create_obstacles(num_obstacles, car, map='none'):
     obstacles = pygame.sprite.Group()
     if map == 'static_fixed':
-        obstacles.add(Obstacle(200, 0, OBS_RADIUS + 10))
-        obstacles.add(Obstacle(200, 400, OBS_RADIUS + 10))
-        obstacles.add(Obstacle(0, 200, OBS_RADIUS + 10))
-        obstacles.add(Obstacle(400, 200, OBS_RADIUS + 10))
-        obstacles.add(Obstacle(125, 125, OBS_RADIUS + 5))
-        obstacles.add(Obstacle(275, 275, OBS_RADIUS + 5))
-        obstacles.add(Obstacle(125, 275, OBS_RADIUS + 5))
-        obstacles.add(Obstacle(275, 125, OBS_RADIUS + 5))
+        x = 160
+        obstacles.add(Obstacle(WIDTH // 2, 0, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(WIDTH // 2, HEIGHT, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(0, HEIGHT // 2, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(WIDTH, HEIGHT // 2, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(x, x, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(HEIGHT - x, HEIGHT - x, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(x, HEIGHT - x, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(HEIGHT - x, x, OBS_RADIUS + 5))
         obstacles.add(Obstacle(WIDTH // 2, HEIGHT // 2, OBS_RADIUS))
     elif map == 'static_random':
         for _ in range(num_obstacles):
@@ -383,9 +342,9 @@ class RlCarEnv(gym.Env):
         # Action |  Straight | Left | Right
         # ==> 3 actions discrete actions
         self.action_space = spaces.Discrete(3)
-        self.state_space = [3, 3, 4, 4, 4, 4]
-        low = [0, 0, 0, 0, 0, 0]
-        high = [2, 2, 3, 3, 3, 3]
+        self.state_space = [3, 3, 3, 3, 3]
+        low = [0, 0, 0, 0, 0]
+        high = [2, 2, 2, 2, 2]
         self.observation_space = spaces.Box(low=np.array(low), high=np.array(high), dtype=np.uint8)
         
         # Initialize Pygame
@@ -407,7 +366,6 @@ class RlCarEnv(gym.Env):
     def reset(self):
         # Reset the environment to its initial state
         car.reset_car_position()
-        
         return np.array(car.get_sensor_values(), dtype=np.uint8)
 
     def step(self, action):
@@ -458,7 +416,7 @@ class RlCarEnv(gym.Env):
         self.image = pygame.image.load(self.image_path)
         self.image_rect = self.image.get_rect(topleft=(WIDTH + 50, 0))
 
-    def render(self, info="", reload=False):
+    def render(self, info=""):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
