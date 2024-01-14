@@ -36,7 +36,6 @@ font_size = 24
 # Set up text area
 text_area_width = 250
 text_area_height = 400
-text_area_rect = pygame.Rect(WIDTH + 70, HEIGHT - 55, text_area_width, text_area_height)
 text_color = (255, 255, 255)
 
 class Car(pygame.sprite.Sprite):
@@ -121,10 +120,13 @@ class Car(pygame.sprite.Sprite):
             self.collided = True
         
         for i, dist in enumerate(distances):
+            self.sensors[i].color = (5, 235, 77) # GREEN for no obstacle
             if dist > 40 and dist < 70:
                 state[i] = 1 
+                self.sensors[i].color = YELLOW # YELLOW for far away obstacle 
             elif dist <= 40:
                 state[i] = 0
+                self.sensors[i].color = (214, 6, 27) # RED for close obstacle 
         
      
         return state
@@ -145,6 +147,7 @@ class Sensor(pygame.sprite.Sprite):
         self.angle_offset = angle_offset
         self.end_pos = start_pos
         self.distance = SENSOR_LENGTH
+        self.color = YELLOW
 
     def update(self, car_center, car_angle):
         self.start_pos = car_center
@@ -354,8 +357,10 @@ class RlCarEnv(gym.Env):
         self.image_path = 'evaluate.png'
         self.update_eval_graph()
 
-
+        # Text
+        self.text_area_rect = pygame.Rect(WIDTH + 70, self.image.get_height() + 15, text_area_width, text_area_height)
         self.font = pygame.font.Font(None, font_size)
+
         # Initialize screen
         self.screen = pygame.display.set_mode((WIDTH + self.image.get_width() + 50, HEIGHT + 300))
         pygame.display.set_caption("RL Car Simulation")
@@ -431,17 +436,17 @@ class RlCarEnv(gym.Env):
         for wall in CIRCULAR_WALLS:
             pygame.draw.circle(self.screen, WALL_COLOR, wall[:2], wall[2], 1)
         for sensor in car.sensors:
-            pygame.draw.line(self.screen, YELLOW, sensor.start_pos, sensor.end_pos, 2)
+            pygame.draw.line(self.screen, sensor.color, sensor.start_pos, sensor.end_pos, 2)
         pygame.draw.line(self.screen, WHITE, (WIDTH + 50, 0), (WIDTH + 50, HEIGHT + 300), 2) 
         
-        pygame.draw.rect(self.screen, BLACK, text_area_rect, 2)
+        pygame.draw.rect(self.screen, BLACK, self.text_area_rect, 2)
 
         # Render and display the input text
         lines = info.split('\n')
         y_offset = 15  # Initial y-offset
         for line in lines:
             text_surface = self.font.render(line, True, text_color)
-            text_rect = text_surface.get_rect(topleft=(text_area_rect.left + 10, text_area_rect.top + y_offset))
+            text_rect = text_surface.get_rect(topleft=(self.text_area_rect.left + 10, self.text_area_rect.top + y_offset))
             self.screen.blit(text_surface, text_rect)
             y_offset += font_size + 2
         
