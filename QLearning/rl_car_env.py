@@ -35,7 +35,7 @@ font_size = 24
 
 # Set up text area
 text_area_width = 250
-text_area_height = 400
+text_area_height = 350
 text_color = (255, 255, 255)
 
 class Car(pygame.sprite.Sprite):
@@ -362,7 +362,7 @@ class RlCarEnv(gym.Env):
         self.font = pygame.font.Font(None, font_size)
 
         # Initialize screen
-        self.screen = pygame.display.set_mode((WIDTH + self.image.get_width() + 50, HEIGHT + 300))
+        self.screen = pygame.display.set_mode((WIDTH + self.image.get_width() + 50, self.image.get_height() + 15 + text_area_height + 15))
         pygame.display.set_caption("RL Car Simulation")
             
         # Game loop
