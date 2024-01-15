@@ -52,7 +52,7 @@ class Car(pygame.sprite.Sprite):
 
         # Sensor directions (relative angles)
         # represent left, front, right sensor
-        self.sensor_angles = [-50, -25, 0, 25, 50]
+        self.sensor_angles = [50, 25, 0, -25, -50]
         self.sensors = [Sensor(self.rect.center, angle) for angle in self.sensor_angles]
 
     def update(self):
@@ -111,25 +111,44 @@ class Car(pygame.sprite.Sprite):
         return intersection1, intersection2
 
     def get_sensor_values(self):
-        # Initial values
-        # Which mean that there are no obstacle in corresponding zones and sectors
-        state = [2, 2, 2, 2, 2]
-        
-        distances = [sensor.distance if sensor.distance >= 0 else 0 for sensor in self.sensors]
-        if any([dist == 0 for dist in distances]):
-            self.collided = True
-        
-        for i, dist in enumerate(distances):
-            self.sensors[i].color = (5, 235, 77) # GREEN for no obstacle
-            if dist > 40 and dist < 70:
-                state[i] = 1 
-                self.sensors[i].color = YELLOW # YELLOW for far away obstacle 
-            elif dist <= 40:
-                state[i] = 0
-                self.sensors[i].color = (214, 6, 27) # RED for close obstacle 
-        
-     
-        return state
+        k1 = 2
+        k2 = 2
+        k3 = 3
+        k4 = 3
+
+        distances = [sensor.distance for sensor in self.sensors]
+        # check the left side sensor
+        dist = min(distances[0:3])
+        if (dist > 40 and dist < 70):
+            k1 = 1  #zone 1
+        elif (dist <= 40):
+            k1 = 0  #zone 0
+
+        # check the right side sensor
+        dist = min(distances[2:])
+        if (dist > 40 and dist < 70):
+            k2 = 1  #zone 1
+        elif (dist <= 40):
+            k2 = 0  #zone 0
+
+        detected = [distance < 100 for distance in distances]
+        # the left sector of the vehicle
+        if detected[0] and detected[2]:
+            k3 = 0 # both subsectors have obstacles
+        elif (detected[1] or detected[2]) and not detected[0]:
+            k3 = 1 # inner left subsector
+        elif (detected[0] or detected[1]) and not detected[2]:
+            k3 = 2 # outter left subsector
+
+        # the right sector of the vehicle
+        if detected[2] and detected[4]:
+            k4 = 0 # both subsectors have obstacles
+        elif (detected[2] or detected[3]) and not detected[4]:
+            k4 = 1 # inner right subsector
+        elif (detected[3] or detected[4]) and not detected[2]:
+            k4 = 2 # outter right subsector 
+
+        return [k1, k2, k3, k4] 
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
@@ -345,9 +364,9 @@ class RlCarEnv(gym.Env):
         # Action |  Straight | Left | Right
         # ==> 3 actions discrete actions
         self.action_space = spaces.Discrete(3)
-        self.state_space = [3, 3, 3, 3, 3]
-        low = [0, 0, 0, 0, 0]
-        high = [2, 2, 2, 2, 2]
+        self.state_space = [3, 3, 4, 4]
+        low = [0, 0, 0, 0]
+        high = [2, 2, 3, 3]
         self.observation_space = spaces.Box(low=np.array(low), high=np.array(high), dtype=np.uint8)
         
         # Initialize Pygame
@@ -402,7 +421,7 @@ class RlCarEnv(gym.Env):
             if action == 1 or action == 2:
                r1 = -0.1
             else:
-                r1 = 0.2 
+                r1 = 0.2
             
             if hasattr(self, 'last_diff_obs') and sum(next_obs - self.last_diff_obs) >= 0:
                 r2 = 0.2

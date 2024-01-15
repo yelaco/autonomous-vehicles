@@ -90,7 +90,7 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
             new_state, reward, terminated, _, _ = env.step(action) # Terminated, Truncated, Info are not needed
             total_rewards_ep += reward
 
-            quit = env.render(f"Episode: {episode}        Step: {step}\nL2: {state[4]}    L1: {state[3]}    F0: {state[2]}    R1: {state[1]}    R2: {state[0]}\nAction:  {actions[action]}\nReward: {'{:.2f}'.format(reward)}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_training_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
+            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[0]}    RZ: {state[1]}    LS: {state[2]}    RS: {state[3]}\nAction:  {actions[action]}\nReward: {'{:.2f}'.format(reward)}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_training_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
             if quit: return Qtable
 
             # custom indexing for state and action 
@@ -133,7 +133,7 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q):
             new_state, reward, terminated, _, info = env.step(action)
             total_rewards_ep += reward
             
-            quit = env.render(f"Episode: {episode}        Step: {step}\nL2: {state[4]}    L1: {state[3]}    F0: {state[2]}    R1: {state[1]}    R2: {state[0]}\nAction:  {actions[action]}    Reward: {'{:.2f}'.format(reward)}\nCrash: {total_crash}\n\nMode: Evaluate\nMax episodes: {n_eval_episodes}\nMax steps: {max_steps}\nTotal reward: {'{:.2f}'.format(total_rewards_ep)}\nMean reward: {'{:.2f}'.format(mean_reward)}")
+            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[0]}    RZ: {state[1]}    LS: {state[2]}    RS: {state[3]}\nAction:  {actions[action]}\nReward: {'{:.2f}'.format(reward)}\nCrash: {total_crash}\n\nMode: Evaluate\nMax episodes: {n_eval_episodes}\nMax steps: {max_steps}\nTotal reward: {'{:.2f}'.format(total_rewards_ep)}\nMean reward: {'{:.2f}'.format(mean_reward)}")
             if quit: return np.mean(episode_rewards),  np.std(episode_rewards)
             if terminated:
                 total_crash += 1
@@ -172,7 +172,7 @@ n_eval_episodes = 100
 
 # Environment parameters
 env_id = "RlCar-v0"   
-max_steps = 4000
+max_steps = 1200
 gamma = 0.9               
 eval_seed = []             
 
