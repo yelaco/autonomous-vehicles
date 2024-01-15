@@ -17,6 +17,8 @@ FPS = 60
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 YELLOW = (255, 255, 0)
+GREEN = (5, 235, 77)
+RED = (214, 6, 27)
 
 # Wall properties
 WALL_COLOR = WHITE
@@ -117,6 +119,10 @@ class Car(pygame.sprite.Sprite):
         k4 = 3
 
         distances = [sensor.distance for sensor in self.sensors]
+
+        if any([dist == 0 for dist in distances]):
+            self.collided = True
+            
         # check the left side sensor
         dist = min(distances[0:3])
         if (dist > 40 and dist < 70):
@@ -166,7 +172,6 @@ class Sensor(pygame.sprite.Sprite):
         self.angle_offset = angle_offset
         self.end_pos = start_pos
         self.distance = SENSOR_LENGTH
-        self.color = YELLOW
 
     def update(self, car_center, car_angle):
         self.start_pos = car_center
@@ -380,6 +385,18 @@ class RlCarEnv(gym.Env):
         self.text_area_rect = pygame.Rect(WIDTH + 70, self.image.get_height() + 15, text_area_width, text_area_height)
         self.font = pygame.font.Font(None, font_size)
 
+        # State
+        self.state_sensors = [
+            [(WIDTH // 2 - 11, HEIGHT + 200), (WIDTH // 2 - 28, HEIGHT + 158), (WIDTH // 2 - 41, HEIGHT + 168) ],
+            [(WIDTH // 2 - 4, HEIGHT + 200), (WIDTH // 2 - 4, HEIGHT + 149), (WIDTH // 2 - 21, HEIGHT + 155) ],
+            [(WIDTH // 2 - 43, HEIGHT + 115), (WIDTH // 2 - 30, HEIGHT + 150), (WIDTH // 2 - 46, HEIGHT + 162), (WIDTH // 2 - 70, HEIGHT + 135) ],
+            [(WIDTH // 2 - 4, HEIGHT + 100), (WIDTH // 2 - 4, HEIGHT + 142), (WIDTH // 2 - 22, HEIGHT + 148), (WIDTH // 2 - 35, HEIGHT + 110) ],
+            [(WIDTH // 2 + 4, HEIGHT + 200), (WIDTH // 2 + 4, HEIGHT + 149), (WIDTH // 2 + 21, HEIGHT + 155) ],
+            [(WIDTH // 2 + 11, HEIGHT + 200), (WIDTH // 2 + 28, HEIGHT + 158), (WIDTH // 2 + 41, HEIGHT + 168) ],
+            [(WIDTH // 2 + 4, HEIGHT + 100), (WIDTH // 2 + 4, HEIGHT + 142), (WIDTH // 2 + 22, HEIGHT + 148), (WIDTH // 2 + 35, HEIGHT + 110) ],
+            [(WIDTH // 2 + 43, HEIGHT + 115), (WIDTH // 2 + 30, HEIGHT + 150), (WIDTH // 2 + 46, HEIGHT + 162), (WIDTH // 2 + 70, HEIGHT + 135) ],
+        ]
+
         # Initialize screen
         self.screen = pygame.display.set_mode((WIDTH + self.image.get_width() + 50, self.image.get_height() + 15 + text_area_height + 15))
         pygame.display.set_caption("RL Car Simulation")
@@ -440,6 +457,40 @@ class RlCarEnv(gym.Env):
         self.image = pygame.image.load(self.image_path)
         self.image_rect = self.image.get_rect(topleft=(WIDTH + 50, 0))
 
+    def state_translate(self, state):
+        colors = [WHITE] * 8
+        
+        if state[0] == 0:
+            left_offset = 0
+        elif state[0] == 1: 
+            left_offset = 2
+        if state[1] == 0:
+            right_offset = 0
+        elif state[1] == 1:
+            right_offset = 2
+        
+        if state[0] != 2:
+            if state[2] == 0:
+                colors[0 + left_offset] = RED 
+                colors[1 + left_offset] = RED 
+            elif state[2] == 1:
+                colors[1 + left_offset] = RED
+            elif state[2] == 2:
+                colors[0 + left_offset] = RED
+        
+        if state[1] != 2:
+            if state[3] == 0:
+                colors[4 + right_offset] = RED
+                colors[5 + right_offset] = RED 
+            elif state[3] == 1:
+                colors[4 + right_offset] = RED
+            elif state[3] == 2:
+                colors[5 + right_offset] = RED 
+        
+        return colors
+        
+
+
     def render(self, info=""):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -455,10 +506,14 @@ class RlCarEnv(gym.Env):
         for wall in CIRCULAR_WALLS:
             pygame.draw.circle(self.screen, WALL_COLOR, wall[:2], wall[2], 1)
         for sensor in car.sensors:
-            pygame.draw.line(self.screen, sensor.color, sensor.start_pos, sensor.end_pos, 2)
+            pygame.draw.line(self.screen, YELLOW, sensor.start_pos, sensor.end_pos, 2)
         pygame.draw.line(self.screen, WHITE, (WIDTH + 50, 0), (WIDTH + 50, HEIGHT + 300), 2) 
         
         pygame.draw.rect(self.screen, BLACK, self.text_area_rect, 2)
+
+        pol_colors = self.state_translate(self.current_obs)
+        for i, polygon in enumerate(self.state_sensors):
+            pygame.draw.polygon(self.screen, pol_colors[i], polygon)
 
         # Render and display the input text
         lines = info.split('\n')

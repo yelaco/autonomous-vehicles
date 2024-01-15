@@ -135,6 +135,7 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q):
             
             quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[0]}    RZ: {state[1]}    LS: {state[2]}    RS: {state[3]}\nAction:  {actions[action]}\nReward: {'{:.2f}'.format(reward)}\nCrash: {total_crash}\n\nMode: Evaluate\nMax episodes: {n_eval_episodes}\nMax steps: {max_steps}\nTotal reward: {'{:.2f}'.format(total_rewards_ep)}\nMean reward: {'{:.2f}'.format(mean_reward)}")
             if quit: return np.mean(episode_rewards),  np.std(episode_rewards)
+
             if terminated:
                 total_crash += 1
                 break
