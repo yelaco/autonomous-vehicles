@@ -7,6 +7,7 @@ import random
 import gym
 import warnings
 import pickle
+import os
 import register_env as register_env
 from rl_car_env import RlCarEnv
 
@@ -68,7 +69,7 @@ def greedy_policy(Qtable, state):
         action = np.argmax(Qtable[tuple(state)])
     return action
 
-def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable):
+def train(n_training_episodes, min_epsilon, max_epsilon, learning_rate, gamma, decay_rate, env, max_steps, Qtable):
     mean_episode_rewards = []
     mean_eval_rewards = []
     episode_rewards = []
@@ -118,7 +119,7 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
         
         episode_rewards.append(total_rewards_ep)
         
-        if episode > 0 and episode % 5 == 0:
+        if (episode + 1) % 5 == 0:
             env.change_map(map='static_random')
             mean_evaluate, _ = evaluate_agent(env, max_steps, 3, Qtable, in_train=True)
             mean_episode_rewards.append(np.mean(episode_rewards)) 
@@ -128,7 +129,6 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
             eval_graph(mean_episode_rewards, mean_eval_rewards)
             env.update_eval_graph()
 
-    env.close()
     return Qtable
 
 def evaluate_agent(env, max_steps, n_eval_episodes, Q, in_train=False):
@@ -209,7 +209,7 @@ if proc == "train":
         Qtable_rlcar = initialize_q_table(state_space, action_space)
     
     # Start training
-    Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable_rlcar)
+    Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, learning_rate, gamma, decay_rate, env, max_steps, Qtable_rlcar)
 
     with open('q_table.pkl', 'wb') as f:
         pickle.dump(Qtable_rlcar, f)
@@ -222,6 +222,18 @@ elif proc == "evaluate":
     mean_reward, std_reward = evaluate_agent(env, max_steps, n_eval_episodes, Qtable_rlcar)
     print(f"Mean_reward={mean_reward:.2f} +/- {std_reward:.2f}")
 
+elif proc == "tuning":
+    learning_rates = [0.5, 0.1, 0.05]
+    gammas = [0.9, 0.95, 0.975]
+    decay_rates = [0.005, 0.01, 0.001] 
+    for lr in learning_rates:
+        for gm in gammas:
+            for dr in decay_rates:
+                Qtable_rlcar = initialize_q_table(state_space, action_space)
+                Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, lr, gm, dr, env, max_steps, Qtable_rlcar)
+                os.system(f'mv evaluate.png evaluate_{lr}_{gm}_{dr}.png')
+
+    
 elif proc == "check":
     with open('q_table.pkl', 'rb') as f:
         Qtable_rlcar = pickle.load(f)
@@ -248,3 +260,4 @@ elif proc == "check":
 else:
     print("**** Error ****[!]\nRun \'python3 q_learning.py train\' \nor \'python3 q_learning.py evaluate\'")
 
+env.close()
