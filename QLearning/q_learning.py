@@ -12,7 +12,7 @@ from rl_car_env import RlCarEnv
 
 actions = ["straight", "left", "right"]
 
-def eval_graph(mean_episode_rewards):
+def eval_graph(mean_episode_rewards, mean_eval_rewards):
     # Maximum number of ticks for x-axis and y-axis
     max_ticks_on_xaxis = 10
     max_ticks_on_yaxis = 8
@@ -25,17 +25,21 @@ def eval_graph(mean_episode_rewards):
     iterations = range(1, len(mean_episode_rewards) + 1)
 
     # Plotting the graph
-    plt.plot(iterations, mean_episode_rewards, linestyle='-')
-    plt.title('Moving average of mean episode rewards for Q-Learning')
+    plt.plot(iterations, mean_episode_rewards, linestyle='-', label='Moving mean episode rewards')
+    plt.plot(iterations, mean_eval_rewards, linestyle='-', label='Learning curve')
+    plt.legend()
+    plt.title('Evaluation for Q-Learning')
     plt.xlabel('Iteration')
-    plt.ylabel('Mean episode reward')
+    plt.ylabel('Mean eward')
 
     if len(mean_episode_rewards) > 0:    
         # Choose a subset of data for the x-axis ticks
         tick_values_x = [int(i) for i in np.linspace(1, len(mean_episode_rewards), num_ticks_x, endpoint=True)] 
 
         # Choose a subset of data for the y-axis ticks
-        tick_values_y = [int(i) for i in np.linspace(int(min(mean_episode_rewards)), int(max(mean_episode_rewards)+1), num_ticks_y, endpoint=True)] 
+        min_y_value = min(min(mean_episode_rewards), min(mean_eval_rewards))
+        max_y_value = max(max(mean_episode_rewards), max(mean_eval_rewards))
+        tick_values_y = [int(i) for i in np.linspace(min_y_value, max_y_value + 1, num_ticks_y, endpoint=True)] 
         
         # Set ticks on the x-axis and y-axis as integers
         plt.xticks(tick_values_x)
@@ -66,10 +70,11 @@ def greedy_policy(Qtable, state):
 
 def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable):
     mean_episode_rewards = []
+    mean_eval_rewards = []
     episode_rewards = []
     state_changed = False
     total_crash = 0
-    eval_graph(mean_episode_rewards)
+    eval_graph(mean_episode_rewards, mean_eval_rewards)
     env.update_eval_graph()
     
     for episode in range(n_training_episodes):
@@ -114,15 +119,19 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
         episode_rewards.append(total_rewards_ep)
         
         if episode > 0 and episode % 5 == 0:
+            env.change_map(map='static_random')
+            mean_evaluate, _ = evaluate_agent(env, max_steps, 3, Qtable, in_train=True)
             mean_episode_rewards.append(np.mean(episode_rewards)) 
+            mean_eval_rewards.append(mean_evaluate)
             episode_rewards = []
-            eval_graph(mean_episode_rewards)
+            env.change_map('static_fixed')
+            eval_graph(mean_episode_rewards, mean_eval_rewards)
             env.update_eval_graph()
 
     env.close()
     return Qtable
 
-def evaluate_agent(env, max_steps, n_eval_episodes, Q):
+def evaluate_agent(env, max_steps, n_eval_episodes, Q, in_train=False):
     episode_rewards = []
     mean_reward = 0
     total_crash = 0
@@ -146,7 +155,9 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q):
         
         episode_rewards.append(total_rewards_ep)
         mean_reward = np.mean(episode_rewards)
-    env.close()
+
+    if not in_train:
+        env.close()
     mean_reward = np.mean(episode_rewards)
     std_reward = np.std(episode_rewards)
 

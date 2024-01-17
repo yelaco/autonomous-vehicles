@@ -25,7 +25,7 @@ WALL_COLOR = WHITE
 CIRCLE_BORDER_RADIUS = min(WIDTH, HEIGHT) // 2  # Adjusted to fit within the window
 
 # Addition
-NUM_OBSTACLE = 2
+NUM_OBSTACLE = 8
 
 # Reward
 NOT_CRASH = 1
@@ -321,7 +321,7 @@ class MovingObstacle(Obstacle):
          
     
 # Function to create obstacles with random positions
-def create_obstacles(num_obstacles, car, map='none'):
+def create_obstacles(num_obstacles, map='none'):
     obstacles = pygame.sprite.Group()
     if map == 'static_fixed':
         x = 160
@@ -338,9 +338,11 @@ def create_obstacles(num_obstacles, car, map='none'):
         for _ in range(num_obstacles):
             while True:
                 x = random.randint(0, WIDTH)
-                y = random.randint(0, HEIGHT)
+                y_1 = random.randint(0, HEIGHT // 2 - 30)
+                y_2 = random.randint(HEIGHT // 2 + 30, HEIGHT)
+                y = random.choice([y_1, y_2])
 
-                obstacle = Obstacle(x, y, OBS_RADIUS)
+                obstacle = Obstacle(x, y, OBS_RADIUS + 5)
                 if not pygame.sprite.collide_rect(car, obstacle):
                     break
             obstacles.add(obstacle)
@@ -360,8 +362,8 @@ CIRCULAR_WALLS = [(WIDTH // 2, HEIGHT // 2, CIRCLE_BORDER_RADIUS)]
 WALLS = CIRCULAR_WALLS  # Use this for collision detection
 
 # Initialize sprites outside the game loop
-obstacles = create_obstacles(NUM_OBSTACLE, car, map='static_fixed')  # Initial number of obstacles
-all_sprites.add(car, *obstacles) 
+obstacles = create_obstacles(NUM_OBSTACLE, map='static_fixed')  # Initial number of obstacles
+all_sprites.add(car, *obstacles)
 
 class RlCarEnv(gym.Env):
     def __init__(self):
@@ -404,6 +406,13 @@ class RlCarEnv(gym.Env):
             
         # Game loop
         self.clock = pygame.time.Clock()
+    
+    def change_map(self, map='static_fixed'):
+        global all_sprites
+        global obstacles
+        all_sprites.remove(*obstacles)
+        obstacles = create_obstacles(NUM_OBSTACLE, map)
+        all_sprites.add(*obstacles) 
 
     def reset(self):
         # Reset the environment to its initial state
@@ -489,8 +498,6 @@ class RlCarEnv(gym.Env):
                 colors[5 + right_offset] = RED 
         
         return colors
-        
-
 
     def render(self, info=""):
         for event in pygame.event.get():
