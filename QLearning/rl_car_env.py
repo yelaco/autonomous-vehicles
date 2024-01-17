@@ -158,6 +158,7 @@ class Car(pygame.sprite.Sprite):
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
+        self.initial_angle = (self.initial_angle + 45) % 360
         self.rect.center = self.initial_pos
         self.angle = self.initial_angle
         self.update()
@@ -443,7 +444,7 @@ class RlCarEnv(gym.Env):
             if hasattr(self, 'last_diff_obs') and sum(next_obs - self.last_diff_obs) >= 0:
                 r2 = 0.2
             else:
-                r2 = -0.2            
+                r2 = -0.1            
 
             if hasattr(self, 'prev_action') and ((self.prev_action == 1 and action == 2) or (self.prev_action == 2 and action == 1)):
                 r3 = -0.8

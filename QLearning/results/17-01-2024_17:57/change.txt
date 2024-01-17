@@ -1,0 +1,4 @@
+Thay r2 trong cách thưởng
+=> Nếu không tiến tới trạng thái tốt hơn thì chỉ -0.1
+=> Ưu tiên việc đi thẳng nếu không xảy ra va chạm
+=> Nếu đi thẳng mà không tiến tới trạng thái tốt hơn thì phần thưởng là 0.2 - 0.1 = 0.1

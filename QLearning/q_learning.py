@@ -73,7 +73,9 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
     env.update_eval_graph()
     
     for episode in range(n_training_episodes):
+        # Exponential decay
         epsilon = min_epsilon + (max_epsilon - min_epsilon)*np.exp(-decay_rate*episode)
+    
         #Reset the environment
         state = env.reset()
         total_rewards_ep = 0
