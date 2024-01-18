@@ -223,15 +223,20 @@ elif proc == "evaluate":
     print(f"Mean_reward={mean_reward:.2f} +/- {std_reward:.2f}")
 
 elif proc == "tuning":
-    learning_rates = [0.5, 0.1, 0.05]
-    gammas = [0.9, 0.95, 0.975]
-    decay_rates = [0.005, 0.01, 0.001] 
-    for lr in learning_rates:
-        for gm in gammas:
-            for dr in decay_rates:
-                Qtable_rlcar = initialize_q_table(state_space, action_space)
-                Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, lr, gm, dr, env, max_steps, Qtable_rlcar)
-                os.system(f'mv evaluate.png evaluate_{lr}_{gm}_{dr}.png')
+    tunings = [
+        (0.5, 0.9, 0.005),
+        (0.1, 0.9, 0.005),
+        (0.05, 0.9, 0.005),
+        (0.5, 0.95, 0.005),
+        (0.5, 0.975, 0.005),
+        (0.5, 0.9, 0.05),
+        (0.5, 0.9, 0.0005)
+    ]
+    for tune in tunings:
+        lr, gm, dr = tune
+        Qtable_rlcar = initialize_q_table(state_space, action_space)
+        Qtable_rlcar = train(n_training_episodes, min_epsilon, max_epsilon, lr, gm, dr, env, max_steps, Qtable_rlcar)
+        os.system(f'mv evaluate.png evaluate_{lr}_{gm}_{dr}.png')
 
     
 elif proc == "check":
