@@ -120,7 +120,6 @@ def train(n_training_episodes, min_epsilon, max_epsilon, learning_rate, gamma, d
         episode_rewards.append(total_rewards_ep)
         
         if (episode + 1) % 5 == 0:
-            env.change_map(map='static_random')
             mean_evaluate, _ = evaluate_agent(env, max_steps, 3, Qtable, in_train=True)
             mean_episode_rewards.append(np.mean(episode_rewards)) 
             mean_eval_rewards.append(mean_evaluate)
@@ -136,6 +135,7 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q, in_train=False):
     mean_reward = 0
     total_crash = 0
     for episode in range(n_eval_episodes):
+        env.change_map(map='static_random')
         state = env.reset()
         total_rewards_ep = 0
     
@@ -148,6 +148,10 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q, in_train=False):
             if quit: return np.mean(episode_rewards),  np.std(episode_rewards)
 
             if terminated:
+                if step < 10:
+                    env.change_map(map='static_random')
+                    state = env.reset()
+                    continue
                 total_crash += 1
                 break
             
@@ -179,7 +183,7 @@ action_space = env.action_space.n
 
 # Training parameters
 n_training_episodes = 300
-learning_rate = 0.5
+learning_rate = 0.1
 
 # Evaluation parameters
 n_eval_episodes = 100      

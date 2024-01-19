@@ -1,6 +1,7 @@
 import gym
 from gym import spaces
 import numpy as np
+import math
 import pygame
 import sys
 import os
@@ -337,12 +338,13 @@ def create_obstacles(num_obstacles, map='none'):
     elif map == 'static_random':
         for _ in range(num_obstacles):
             while True:
-                x = random.randint(0, WIDTH)
-                y_1 = random.randint(0, HEIGHT // 2 - 30)
-                y_2 = random.randint(HEIGHT // 2 + 30, HEIGHT)
-                y = random.choice([y_1, y_2])
+                x_1 = random.randint(WIDTH // 2 - 100, WIDTH)
+                x_2 = random.randint(WIDTH // 2 - 200, WIDTH)
+                x = random.choice([x_1, x_2])
+                y_offset = int(math.sqrt(CIRCLE_BORDER_RADIUS**2 - abs(WIDTH // 2 - x)**2)) 
+                y = random.randint(HEIGHT // 2 - y_offset, HEIGHT // 2 + int(y_offset))
 
-                obstacle = Obstacle(x, y, OBS_RADIUS + 5)
+                obstacle = Obstacle(x, y, OBS_RADIUS + 10)
                 if not pygame.sprite.collide_rect(car, obstacle):
                     break
             obstacles.add(obstacle)
