@@ -1,2 +1,0 @@
-Thay cách lấy trạng thái: Chỉ dựa trên khoảng cách đến vật cản.
-=> Rút còn 3^5 = 243 trạng thái

@@ -1,2 +1,0 @@
-Thay cách lấy trạng thái: Đổi về state space như lúc dùng 3 sensor, chỉ coi các sensor mới thêm vào như 1 cách rõ hơn để xác định trạng thái
-=> Rút còn 3 * 3 * 4 * 4 = 144 trạng thái

@@ -1,2 +1,3 @@
-.env
-/QLearning/__pycache__/*
+/obstacle_avoiding_car/.env
+/obstacle_avoiding_car/QLearning/__pycache__/*
+/computer_vision/yolov5
