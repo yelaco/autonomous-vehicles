@@ -1,0 +1,1 @@
+Đặt learning rate = 0.1
