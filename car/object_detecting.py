@@ -65,6 +65,7 @@ class ObjectDetectingThread(threading.Thread):
         
         classes = ['obstacle']
         bbox = None
+        # obj_label = ""
 
         while True:
             if cam_cleaner.last_frame is None:
@@ -81,10 +82,8 @@ class ObjectDetectingThread(threading.Thread):
                     # cy = int(y + h // 2)
                     #cv2.line(frame, (int(cx), int(cy)), (width // 2, height), (255,255,255), 2)
                     
-                    #text = obj_label + "{:.2f}".format(conf)
                     #cv2.rectangle(frame, (x, y), (x + w, y + h), (255,0,0), 2)
                     #cv2.putText(frame, text, (x,y-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
-                    #cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
                     self.car.make_decision(follow_object, bbox, width)
                 else :
                     self.tracking = False
@@ -124,6 +123,7 @@ class ObjectDetectingThread(threading.Thread):
                 for i in num_retained_boxes:
                     if classes[classes_ids[i]] == 'obstacle':
                         bbox = boxes[i]
+                        obj_label = classes[classes_ids[0]]
                         self.tracking = True
                         tracker = init_tracker(frame, bbox)
                         self.car.make_decision(follow_object, bbox, width)
@@ -134,4 +134,4 @@ class ObjectDetectingThread(threading.Thread):
             #if cv2.waitKey(1) & 0xFF == ord('q'): 
                 #break
                         
-        cap.release()
+            cap.release()
