@@ -76,6 +76,15 @@ class ObjectDetectingThread(threading.Thread):
             if self.tracking:
                 ok, bbox = tracker.update(frame)
                 if ok:
+                    # x, y, w, h = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+                    # cx = int(x + w // 2)
+                    # cy = int(y + h // 2)
+                    #cv2.line(frame, (int(cx), int(cy)), (width // 2, height), (255,255,255), 2)
+                    
+                    #text = obj_label + "{:.2f}".format(conf)
+                    #cv2.rectangle(frame, (x, y), (x + w, y + h), (255,0,0), 2)
+                    #cv2.putText(frame, text, (x,y-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
+                    #cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
                     self.car.make_decision(follow_object, bbox, width)
                 else :
                     self.tracking = False
@@ -119,5 +128,10 @@ class ObjectDetectingThread(threading.Thread):
                         tracker = init_tracker(frame, bbox)
                         self.car.make_decision(follow_object, bbox, width)
                         break
+            # Display frame with bounding box
+            #cv2.imshow("Frame", frame)
+
+            #if cv2.waitKey(1) & 0xFF == ord('q'): 
+                #break
                         
         cap.release()
