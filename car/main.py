@@ -3,8 +3,8 @@ from obstacle_avoiding import ObstacleAvoidingThread
 from object_detecting import ObjectDetectingThread
 
 car = Car()
-object_avoider = ObstacleAvoidingThread(car)
-object_detector = ObjectDetectingThread(car, detecting=False)
+object_avoider = ObstacleAvoidingThread(car, avoiding=False)
+object_detector = ObjectDetectingThread(car)
 
 while True:
     if object_detector.tracking:

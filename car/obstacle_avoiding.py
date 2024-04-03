@@ -56,6 +56,7 @@ class ObstacleAvoidingThread(threading.Thread):
         self.start()
 
     def run(self):
-        while self.avoiding:
+        while True:
             state = discretize(self.car.ultrasonic_sensors())
-            self.car.make_decision(greedy_policy, self.Qtable_rlcar, state)
+            if self.avoiding:
+                self.car.make_decision(greedy_policy, self.Qtable_rlcar, state)

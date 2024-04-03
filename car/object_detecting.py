@@ -66,9 +66,8 @@ class ObjectDetectingThread(threading.Thread):
         classes = ['obstacle']
         bbox = None
 
-        while self.detecting:
+        while True:
             if cam_cleaner.last_frame is None:
-                time.sleep(0.1)
                 continue    
 
             frame = cam_cleaner.last_frame
@@ -114,6 +113,7 @@ class ObjectDetectingThread(threading.Thread):
                 
                 for i in num_retained_boxes:
                     if classes[classes_ids[i]] == 'obstacle':
+                        bbox = boxes[i]
                         self.tracking = True
                         tracker = init_tracker(frame, bbox)
                         self.car.make_decision(follow_object, bbox, width)
