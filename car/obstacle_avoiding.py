@@ -1,6 +1,7 @@
 import numpy as np
 import threading
 import pickle
+import time
 from car import Car
 
 def greedy_policy(Qtable, state):
@@ -54,7 +55,7 @@ class ObstacleAvoidingThread(threading.Thread):
         self.avoiding = avoiding 
         super(ObstacleAvoidingThread, self).__init__(name=name)
         self.start()
-
+    
     def run(self):
         while True:
             state = discretize(self.car.ultrasonic_sensors())

@@ -79,6 +79,7 @@ class ObjectDetectingThread(threading.Thread):
                     self.car.make_decision(follow_object, bbox, width)
                 else :
                     self.tracking = False
+                    self.car.stop()
             else:
                 blob = cv2.dnn.blobFromImage(frame, 1/255, (640, 640), (0, 0, 0), True, crop=False)
                 net.setInput(blob)
@@ -95,10 +96,10 @@ class ObjectDetectingThread(threading.Thread):
                 for i in range(rows):
                     row = detections[i]
                     confidence = row[4]
-                    if confidence > 0.4:
+                    if confidence > 0.6:
                         classes_score = row[5:]
                         ind = np.argmax(classes_score)
-                        if classes_score[ind] > 0.2:
+                        if classes_score[ind] > 0.5:
                             classes_ids.append(ind)
                             confidences.append(confidence)
                             cx, cy, w, h = row[:4]
