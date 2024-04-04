@@ -13,5 +13,5 @@ while True:
     else:
         if car.stopped:
             time.sleep(5)
-            car.stopped = True
+            car.stopped = False
         object_avoider.avoiding = True

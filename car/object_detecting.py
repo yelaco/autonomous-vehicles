@@ -104,7 +104,7 @@ class ObjectDetectingThread(threading.Thread):
                 for i in range(rows):
                     row = detections[i]
                     confidence = row[4]
-                    if confidence > 0.6:
+                    if confidence > 0.5:
                         classes_score = row[5:]
                         ind = np.argmax(classes_score)
                         if classes_score[ind] > 0.5:
@@ -118,16 +118,17 @@ class ObjectDetectingThread(threading.Thread):
                             box = np.array([x1,y1,wv,hv])
                             boxes.append(box)
 
-                num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
+                if len(boxes) > 0:
+                    num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
                 
-                for i in num_retained_boxes:
-                    if classes[classes_ids[i]] == 'obstacle':
-                        bbox = boxes[i]
-                        obj_label = classes[classes_ids[0]]
-                        self.tracking = True
-                        tracker = init_tracker(frame, bbox)
-                        self.car.make_decision(follow_object, bbox, width)
-                        break
+                    for i in num_retained_boxes:
+                        if classes[classes_ids[i]] == 'obstacle':
+                            bbox = boxes[i]
+                            obj_label = classes[classes_ids[0]]
+                            self.tracking = True
+                            tracker = init_tracker(frame, bbox)
+                            self.car.make_decision(follow_object, bbox, width)
+                            break
             # Display frame with bounding box
             #cv2.imshow("Frame", frame)
 
