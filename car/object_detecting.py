@@ -67,12 +67,14 @@ class ObjectDetectingThread(threading.Thread):
         bbox = None
         # obj_label = ""
 
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
         while True:
             if cam_cleaner.last_frame is None:
                 continue    
 
             frame = cam_cleaner.last_frame
-            height, width, _ = frame.shape
 
             if self.tracking:
                 ok, bbox = tracker.update(frame)
@@ -120,7 +122,6 @@ class ObjectDetectingThread(threading.Thread):
 
                 if len(boxes) > 0:
                     num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
-                
                     for i in num_retained_boxes:
                         if classes[classes_ids[i]] == 'obstacle':
                             bbox = boxes[i]
