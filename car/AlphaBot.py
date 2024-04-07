@@ -95,13 +95,12 @@ class AlphaBot(object):
 
             while GPIO.input(echo) == 0:
                 start = time.time()
-            while GPIO.input(echo) == 1:
+            stop = start
+            while GPIO.input(echo) == 1 and stop - start < 0.01:
                 stop = time.time()
 
-            # calculator
             elapsed = stop - start
 
-            stop = time.time()
             # v (cm/s)
             distance = elapsed * 34000
             distance = distance / 2
