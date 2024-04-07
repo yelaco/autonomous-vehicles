@@ -40,19 +40,22 @@ class CameraBufferCleanerThread(threading.Thread):
         while True:
             ret, self.last_frame = self.camera.read()
 
-def follow_object(bbox, width):
+def follow_object(Ab, bbox, width):
     x, w  = int(bbox[0]), int(bbox[2])
     cx = int(x + w // 2)
     if cx < width // 2 - 50: 
-        return Car.LEFT
+        Ab.left()
+        print("tracking: Left")
     elif cx > width // 2 + 50: 
-        return Car.RIGHT 
+        Ab.right() 
+        print("tracking: Right")
     else:  
-        return Car.FORWARD
+        Ab.forward()
+        print("tracking: Forward")
 
 class ObjectDetectingThread(threading.Thread):
-    def __init__(self, car: Car, detecting=True, name='object-detecting-thread'):
-        self.car = car
+    def __init__(self, Ab, detecting=True, name='object-detecting-thread'):
+        self.Ab = Ab
         self.detecting = detecting
         self.tracking = False
         super(ObjectDetectingThread, self).__init__(name=name)
@@ -125,10 +128,9 @@ class ObjectDetectingThread(threading.Thread):
                     for i in num_retained_boxes:
                         if classes[classes_ids[i]] == 'obstacle':
                             bbox = boxes[i]
-                            obj_label = classes[classes_ids[0]]
                             self.tracking = True
                             tracker = init_tracker(frame, bbox)
-                            self.car.make_decision(follow_object, bbox, width)
+                            follow_object(self.Ab, bbox, width)
                             break
             # Display frame with bounding box
             #cv2.imshow("Frame", frame)
