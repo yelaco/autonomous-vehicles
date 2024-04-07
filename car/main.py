@@ -5,7 +5,6 @@ import numpy as np
 import threading
 import time
 import cv2
-from object_detecting import ObjectDetectingThread
 
 (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
 tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'CSRT', 'MOSSE']
@@ -43,7 +42,7 @@ class CameraBufferCleanerThread(threading.Thread):
         while True:
             _, self.last_frame = self.camera.read()
 
-def follow_object(Ab, bbox, width):
+def follow_object(bbox, width):
     x, w  = int(bbox[0]), int(bbox[2])
     cx = int(x + w // 2)
     if cx < width // 2 - 50: 
@@ -57,8 +56,11 @@ def follow_object(Ab, bbox, width):
         print("tracking: Forward")
 
 def detect():
+    global tracking 
+
     while True:
         if cam_cleaner.last_frame is None:
+            time.sleep(0.01)
             continue    
 
         frame = cam_cleaner.last_frame

@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO
  
 import time
+import sys
 
 #from mpu6050 import mpu6050
  
@@ -93,17 +94,23 @@ class AlphaBot(object):
             time.sleep(0.05)
             GPIO.output(trig, GPIO.LOW)
 
-            while GPIO.input(echo) == 0:
-                start = time.time()
-            stop = start
-            while GPIO.input(echo) == 1 and stop - start < 0.01:
-                stop = time.time()
+            start = time.time()
+            pulse_start = start
+            while GPIO.input(echo) == 0 and pulse_start - start < 0.005:
+                pulse_start = time.time()
+                if round(pulse_start - start, 3) >= 0.300:
+                    sys.exit(f"HR-SO4 #{i+1} timed out")
+            else:
+                pulse_end = 0
+                pulse_duration = 0
+                while GPIO.input(echo) == 1 and pulse_duration < 0.1:
+                    pulse_end = time.time()
+                    pulse_duration = pulse_end - pulse_start
 
-            elapsed = stop - start
+            pulse_duration = pulse_end - pulse_start
 
             # v (cm/s)
-            distance = elapsed * 34000
-            distance = distance / 2
+            distance = pulse_duration * 17150
             distances[i] = distance - 2 
 
         return distances
