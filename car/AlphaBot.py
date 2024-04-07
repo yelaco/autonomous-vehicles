@@ -88,9 +88,9 @@ class AlphaBot(object):
             trig = trigs[i]
             echo = echos[i]
             GPIO.output(trig, GPIO.LOW)
-            time.sleep(0.01)
+            time.sleep(0.02)
             GPIO.output(trig, GPIO.HIGH)
-            time.sleep(0.00001)
+            time.sleep(0.05)
             GPIO.output(trig, GPIO.LOW)
 
             while GPIO.input(echo) == 0:
@@ -119,16 +119,16 @@ class AlphaBot(object):
         
 
     def forward(self):
-        self.PWMA.start(40)
-        self.PWMB.start(40)
+        self.PWMA.start(60)
+        self.PWMB.start(60)
  
-        GPIO.output(self.IN1,GPIO.HIGH) # Tien_phai
+        GPIO.output(self.IN1,GPIO.LOW) # Tien_phai
  
-        GPIO.output(self.IN2,GPIO.LOW) # Lui_phai
+        GPIO.output(self.IN2,GPIO.HIGH) # Lui_phai
  
-        GPIO.output(self.IN3,GPIO.HIGH) # Tien_trai
+        GPIO.output(self.IN3,GPIO.LOW) # Tien_trai
  
-        GPIO.output(self.IN4,GPIO.LOW) # Lui_trai
+        GPIO.output(self.IN4,GPIO.HIGH) # Lui_trai
  
  
  
@@ -146,22 +146,7 @@ class AlphaBot(object):
  
     def backward(self):
  
-        GPIO.output(self.IN1,GPIO.LOW)
- 
-        GPIO.output(self.IN2,GPIO.HIGH)
- 
-        GPIO.output(self.IN3,GPIO.LOW)
- 
-        GPIO.output(self.IN4,GPIO.HIGH)
- 
- 
- 
-    def right(self):
-
-        self.PWMA.start(99)
-        self.PWMB.start(99)
- 
-        GPIO.output(self.IN1,GPIO.LOW)
+        GPIO.output(self.IN1,GPIO.HIGH)
  
         GPIO.output(self.IN2,GPIO.LOW)
  
@@ -171,18 +156,33 @@ class AlphaBot(object):
  
  
  
+    def right(self):
+
+        self.PWMA.start(80)
+        self.PWMB.start(80)
+ 
+        GPIO.output(self.IN1,GPIO.LOW)
+ 
+        GPIO.output(self.IN2,GPIO.HIGH)
+ 
+        GPIO.output(self.IN3,GPIO.LOW)
+ 
+        GPIO.output(self.IN4,GPIO.LOW)
+ 
+ 
+ 
     def left(self):
  
-        self.PWMA.start(99)
-        self.PWMB.start(99)
+        self.PWMA.start(80)
+        self.PWMB.start(80)
 
-        GPIO.output(self.IN1,GPIO.HIGH)
+        GPIO.output(self.IN1,GPIO.LOW)
  
         GPIO.output(self.IN2,GPIO.LOW)
  
         GPIO.output(self.IN3,GPIO.LOW)
  
-        GPIO.output(self.IN4,GPIO.LOW)
+        GPIO.output(self.IN4,GPIO.HIGH)
  
        
  
