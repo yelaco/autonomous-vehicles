@@ -145,8 +145,8 @@ def tcp_conn():
                 data = conn.recv(1024)
                 if not data:
                     break
-                    
-            print("Received:", data.decode())
+                
+                print("Received:", data.decode())
             
 def greedy_policy(Qtable, state):
     action = np.argmax(Qtable[tuple(state)])
