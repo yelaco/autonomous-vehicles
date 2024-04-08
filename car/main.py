@@ -142,7 +142,7 @@ def tcp_conn():
             
             while True:
                 # Receive data from the client
-                data = conn.recv(1024)
+                data = str(conn.recv(1024)).strip()
                 if not data:
                     break
                 
