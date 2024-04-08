@@ -5,6 +5,7 @@ import numpy as np
 import threading
 import time
 import cv2
+import socket
 
 (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
 tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'CSRT', 'MOSSE']
@@ -123,6 +124,29 @@ def detect():
             #if cv2.waitKey(1) & 0xFF == ord('q'): 
                 #break
 
+def tcp_conn():
+    # Create a socket object
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        # Bind the socket to the address and port
+        server_socket.bind((HOST, PORT))
+        
+        # Listen for incoming connections
+        server_socket.listen()
+        print("Server is listening...")
+        
+        # Accept connection
+        conn, addr = server_socket.accept()
+        with conn:
+            print('Connected by', addr)
+            
+            while True:
+                # Receive data from the client
+                data = conn.recv(1024)
+                if not data:
+                    break
+                    
+            print("Received:", data.decode())
+            
 def greedy_policy(Qtable, state):
     action = np.argmax(Qtable[tuple(state)])
     return action
@@ -168,6 +192,9 @@ def get_sensor_values(distances):
 
 Ab = AlphaBot()
 
+HOST = '192.168.0.100'
+PORT = 65432
+
 cap = cv2.VideoCapture(0)
 cam_cleaner = CameraBufferCleanerThread(cap)
 net = cv2.dnn.readNetFromONNX("best.onnx")
@@ -183,8 +210,10 @@ with open('q_table.pkl', 'rb') as f:
     Qtable_rlcar = pickle.load(f)
 
 try:
-    p1 = threading.Thread(target=detect)
-    p1.start()
+    # p1 = threading.Thread(target=detect)
+    # p1.start()
+    p2 = threading.Thread(target=tcp_conn)
+    p2.start()
 
     while True:
         if tracking:
