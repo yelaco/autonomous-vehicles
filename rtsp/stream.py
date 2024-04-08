@@ -13,7 +13,7 @@ import argparse
 # import required library like Gstreamer and GstreamerRtspServer
 gi.require_version('Gst', '1.0')
 gi.require_version('GstRtspServer', '1.0')
-from gi.repository import Gst, GstRtspServer, GObject
+from gi.repository import Gst, GstRtspServer, GObject, GLib
 
 # Sensor Factory class which inherits the GstRtspServer base class and add
 # properties to it.
@@ -91,8 +91,6 @@ except ValueError:
     pass
 
 # initializing the threads and running the stream on loop.
-GObject.threads_init()
-Gst.init(None)
 server = GstServer()
-loop = GObject.MainLoop()
+loop = GLib.MainLoop()
 loop.run()
