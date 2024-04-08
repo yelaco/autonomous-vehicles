@@ -69,10 +69,18 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
     conn, addr = server_socket.accept()
     with conn:
         print('Connected by', addr)
+        
+        conn.settimeout(0.1)
         while True:
-            # Receive data from the client
-            data = conn.recv(1024)
-            if not data:
+            try:
+                # Receive data from the client
+                data = conn.recv(1024)
+                if not data:
+                    break
+                    
+                print("Received:", data.decode())
+            except socket.timeout:
+                print("HERE")
                 distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
                 print(distances, end=" ")
                 state = get_sensor_values(distances)
@@ -90,4 +98,3 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
                 else:
                     Ab.stop()
                 break
-            print("Received:", data.decode())
