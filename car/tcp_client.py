@@ -154,6 +154,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                         tracking = True
                         client_socket.sendall(get_decision(bbox).encode())
                         break
+            
+            if not tracking:
+                client_socket.sendall("None".encode())
                 
         # Display frame with bounding box
         cv2.imshow("Frame", frame)

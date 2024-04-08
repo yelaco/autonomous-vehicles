@@ -7,7 +7,7 @@ import threading
 print(cv2.__version__)
 
 tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'CSRT', 'MOSSE']
-tracker_type = tracker_types[6]
+tracker_type = tracker_types[5]
 
 def init_tracker(frame, bbox):
     if int(major_ver) < 4 and int(minor_ver) < 3:
@@ -53,6 +53,8 @@ classes = ['obstacle']
 bbox = None
 tracking = False
 obj_label = ""
+
+decision = ""
 
 # Main loop
 while True:
