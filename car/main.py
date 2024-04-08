@@ -125,6 +125,7 @@ def detect():
                 #break
 
 def tcp_conn():
+    global data
     # Create a socket object
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         # Bind the socket to the address and port
@@ -205,6 +206,7 @@ width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 tracking = False
+data = "None"
 
 with open('q_table.pkl', 'rb') as f:
     Qtable_rlcar = pickle.load(f)
@@ -216,26 +218,23 @@ try:
     p2.start()
 
     while True:
-        if tracking:
-            time.sleep(0.1)
-            continue
+        if data == "None":
+            distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
+            print(distances, end=" ")
+            state = get_sensor_values(distances)
 
-        distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
-        print(distances, end=" ")
-        state = get_sensor_values(distances)
-
-        action = greedy_policy(Qtable_rlcar, state)
-        if action == 0:
-            print("Forward")
-            Ab.forward()
-        elif action == 1:
-            print("Left")
-            Ab.left()
-        elif action == 2:
-            print("Right")
-            Ab.right()
-        else:
-            Ab.stop()
+            action = greedy_policy(Qtable_rlcar, state)
+            if action == 0:
+                print("Forward")
+                Ab.forward()
+            elif action == 1:
+                print("Left")
+                Ab.left()
+            elif action == 2:
+                print("Right")
+                Ab.right()
+            else:
+                Ab.stop()
  
 finally:
     GPIO.cleanup()
