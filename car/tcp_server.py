@@ -70,30 +70,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
     with conn:
         print('Connected by', addr)
         
-        conn.settimeout(0.1)
         while True:
-            try:
-                # Receive data from the client
-                data = conn.recv(1024)
-                if not data:
-                    break
-                    
-                print("Received:", data.decode())
-            except socket.timeout:
-                distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
-                print(distances, end=" ")
-                state = get_sensor_values(distances)
-
-                action = greedy_policy(Qtable_rlcar, state)
-                if action == 0:
-                    print("Forward")
-                    Ab.forward()
-                elif action == 1:
-                    print("Left")
-                    Ab.left()
-                elif action == 2:
-                    print("Right")
-                    Ab.right()
-                else:
-                    Ab.stop()
+            # Receive data from the client
+            data = conn.recv(1024)
+            if not data:
                 break
+                    
+            print("Received:", data.decode())
