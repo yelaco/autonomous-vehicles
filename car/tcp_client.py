@@ -3,12 +3,19 @@ import time
 import cv2
 import numpy as np
 import threading
+import argparse
+import ipaddress
+import sys
 
 (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
 print(cv2.__version__)
 
 tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'CSRT', 'MOSSE']
 tracker_type = tracker_types[5]
+
+parser = argparse.ArgumentParser(description='Connect to raspberry pi using IP address')
+parser.add_argument('host', metavar='h', type=str, help='ip address of pi')
+args = parser.parse_args()
 
 def init_tracker(frame, bbox):
     if int(major_ver) < 4 and int(minor_ver) < 3:
@@ -54,13 +61,19 @@ def get_decision(bbox):
     else:  
         return "Go straight"
 
-cap = cv2.VideoCapture(0)
+# Define host and port
+try:
+    HOST = ipaddress.ip_address(args.host)
+    print(f"Valid IP address: {HOST}")
+except ValueError:
+    sys.exit(f"Invalid IP address: {args.host}")
+    
+PORT = 65432
+
+cap = cv2.VideoCapture(f"rtsp://{HOST}:8554/video_stream")
 cam_cleaner = CameraBufferCleanerThread(cap)
 
 net = cv2.dnn.readNetFromONNX("best.onnx")
-# file = open("coco.txt","r")
-# classes = file.read().split('\n')
-# print(classes)
 classes = ['obstacle']
 
 bbox = None
@@ -68,10 +81,6 @@ tracking = False
 obj_label = ""
 
 decision = ""
-
-# Define host and port
-HOST = '192.168.0.100'
-PORT = 65432
 
 # Create a socket object
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -82,8 +91,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
     while True:
         # Read frame from webcam
         if cam_cleaner.last_frame is None:
-            time.sleep(0.01)
-            continue    
+            continue
 
         frame = cam_cleaner.last_frame
 
@@ -105,7 +113,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2) 
             else :
                 tracking = False
-                print("LOST TRACK")
         else: 
             # Detect objects using YOLOv5
             height, width, _ = frame.shape
@@ -164,9 +171,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         if cv2.waitKey(1) & 0xFF == ord('q'): 
             client_socket.close()
             break
-
-        # # Add delay if needed
-        time.sleep(0.1)  # Adjust as needed based on the required frequency of sensor readings and decision making
 
     # Release the camera and close serial connection
     cap.release()
