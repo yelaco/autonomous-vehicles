@@ -105,8 +105,11 @@ def get_sensor_values(distances):
     return [k1, k2, k3, k4]
 
 def clean():
-    mediamtx_pid = subprocess.check_output(["pidof", "mediamtx"]).decode().strip()
-    os.kill(int(mediamtx_pid), signal.SIGTERM)
+    try:
+        mediamtx_pid = subprocess.check_output(["pidof", "mediamtx"]).decode().strip()
+        os.kill(int(mediamtx_pid), signal.SIGTERM)
+    except:
+        print("Cleaned")
 
 Ab = AlphaBot()
 
@@ -164,8 +167,6 @@ try:
  
 finally:
     GPIO.cleanup()
-    stdout, stderr = rtsp_server.communicate()
-    print(stderr.decode())
     rtsp_stream.terminate()
     rtsp_server.terminate()
     clean()

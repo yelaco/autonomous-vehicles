@@ -42,11 +42,12 @@ class CameraBufferCleanerThread(threading.Thread):
     def __init__(self, camera, name='camera-buffer-cleaner-thread'):
         self.camera = camera
         self.last_frame = None
+        self.running = True
         super(CameraBufferCleanerThread, self).__init__(name=name)
         self.start()
 
     def run(self):
-        while True:
+        while self.running:
             ret, self.last_frame = self.camera.read()
             
 def get_decision(bbox):
@@ -112,7 +113,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 text = obj_label + "{:.2f}".format(conf)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255,0,0), 2)
                 cv2.putText(frame, text, (x,y-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
-                cv2.putText(frame, decision, (170, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)  
+                cv2.putText(frame, decision, (160, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)  
             else :
                 tracking = False
         else: 
@@ -176,7 +177,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         cv2.imshow("Frame", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'): 
-            break
-        
+            cam_cleaner.running = False
+            break 
     cap.release()
     client_socket.close()    
