@@ -9,6 +9,8 @@ import re
 import sys
 import subprocess
 import time
+import os
+import signal
 
 def get_ip_addr():
     # Run ifconfig command to get network interface information
@@ -102,6 +104,15 @@ def get_sensor_values(distances):
 
     return [k1, k2, k3, k4]
 
+def clean():
+    mediamtx_pid = subprocess.check_output(["pidof", "mediamtx"]).decode().strip()
+    # Get the PID of the ffmpeg process
+    ffmpeg_pid = subprocess.check_output(["pidof", "ffmpeg"]).decode().strip()
+    
+    # Send termination signals to the processes
+    os.kill(int(ffmpeg_pid), signal.SIGTERM)
+    os.kill(int(mediamtx_pid), signal.SIGTERM)
+
 Ab = AlphaBot()
 
 HOST = get_ip_addr() 
@@ -122,9 +133,9 @@ ffmpeg_command = [
     f"rtsp://{HOST}:8554/video_stream"
 ]
 rtsp_server = subprocess.Popen("./mediamtx", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-time.sleep(5)
+time.sleep(2)
 rtsp_stream = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-time.sleep(5)
+time.sleep(2)
 #-----------------------#
 
 data = "None"
@@ -160,3 +171,4 @@ finally:
     GPIO.cleanup()
     rtsp_stream.terminate()
     rtsp_server.terminate()
+    clean()

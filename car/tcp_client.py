@@ -112,7 +112,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 text = obj_label + "{:.2f}".format(conf)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255,0,0), 2)
                 cv2.putText(frame, text, (x,y-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
-                cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2) 
+                cv2.putText(frame, decision, (170, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)  
             else :
                 tracking = False
         else: 
@@ -170,15 +170,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         # Calculate Frames per second (FPS)
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
         # Display FPS on frame
-        cv2.putText(frame, "FPS : " + str(int(fps)), (100,50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
+        cv2.putText(frame, "FPS : " + str(int(fps)), (20,50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
         
         # Display frame with bounding box
         cv2.imshow("Frame", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'): 
-            client_socket.close()
             break
-
-    # Release the camera and close serial connection
-    cap.release()
         
+    cap.release()
+    client_socket.close()    
