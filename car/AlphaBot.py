@@ -96,6 +96,7 @@ class AlphaBot(object):
 
             start = time.time()
             pulse_start = start
+            ## Note: Mới thêm phần timeout để tránh 1 số trường hợp cảm biến chết
             while GPIO.input(echo) == 0 and pulse_start - start < 0.005:
                 pulse_start = time.time()
                 if round(pulse_start - start, 3) >= 0.300:
@@ -111,7 +112,7 @@ class AlphaBot(object):
 
             # v (cm/s)
             distance = pulse_duration * 17150
-            distances[i] = distance - 2 
+            distances[i] = distance chết
 
         return distances
 

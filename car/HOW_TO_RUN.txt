@@ -1,0 +1,11 @@
+Vào thư mục /car
+Trước tiên, tạo một session mới để chạy rtsp server
+    screen -S rtsp_server
+Sau đó thoát session này bằng cách nhấn ctrl A + ctrl D
+Giờ chạy lệnh
+    python3 main.py
+Chờ cho đến khi chương trình hiện dòng
+    "Server is listening..."
+Bật terminal ở máy đang chạy (không phải trên pi), vào thư mục /car
+Chạy lệnh
+    python3 tcp_client.py
