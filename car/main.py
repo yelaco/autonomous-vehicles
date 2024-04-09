@@ -120,9 +120,9 @@ ffmpeg_command = [
     "-f", "rtsp",
     f"rtsp://{HOST}:8554/video_stream"
 ]
-rtsp_server = subprocess.Popen("./mediamtx", shell=True)
+rtsp_server = subprocess.Popen("./mediamtx", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 time.sleep(2)
-rtsp_stream = subprocess.Popen(ffmpeg_command)
+rtsp_stream = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 time.sleep(2)
 #-----------------------#
 
