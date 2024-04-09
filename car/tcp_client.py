@@ -94,6 +94,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
 
         frame = cam_cleaner.last_frame
 
+        # Start timer
+        timer = cv2.getTickCount()
+
         if tracking:
             ok, bbox = tracker.update(frame)
             # Draw bounding box
@@ -163,7 +166,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             
             if not tracking:
                 client_socket.sendall("None".encode())
-                
+        
+        # Calculate Frames per second (FPS)
+        fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
+        # Display FPS on frame
+        cv2.putText(frame, "FPS : " + str(int(fps)), (100,50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
+        
         # Display frame with bounding box
         cv2.imshow("Frame", frame)
 
