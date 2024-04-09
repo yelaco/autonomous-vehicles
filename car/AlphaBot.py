@@ -125,8 +125,8 @@ class AlphaBot(object):
         
 
     def forward(self):
-        self.PWMA.start(60)
-        self.PWMB.start(60)
+        self.PWMA.start(25)
+        self.PWMB.start(25)
  
         GPIO.output(self.IN1,GPIO.LOW) # Tien_phai
  
@@ -164,8 +164,8 @@ class AlphaBot(object):
  
     def right(self):
 
-        self.PWMA.start(80)
-        self.PWMB.start(80)
+        self.PWMA.start(50)
+        self.PWMB.start(50)
  
         GPIO.output(self.IN1,GPIO.LOW)
  
@@ -179,8 +179,8 @@ class AlphaBot(object):
  
     def left(self):
  
-        self.PWMA.start(80)
-        self.PWMB.start(80)
+        self.PWMA.start(50)
+        self.PWMB.start(50)
 
         GPIO.output(self.IN1,GPIO.LOW)
  
