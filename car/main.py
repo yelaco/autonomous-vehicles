@@ -164,6 +164,8 @@ try:
  
 finally:
     GPIO.cleanup()
+    stdout, stderr = rtsp_server.communicate()
+    print(stderr.decode())
     rtsp_stream.terminate()
     rtsp_server.terminate()
     clean()
