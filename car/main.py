@@ -57,6 +57,7 @@ def tcp_conn():
                         Ab.left()
                     elif data == "Turn right":
                         Ab.right()
+    connected = False
             
 def greedy_policy(Qtable, state):
     action = np.argmax(Qtable[tuple(state)])

@@ -63,11 +63,10 @@ def get_decision(bbox):
 
 # Define host and port
 try:
-    HOST = ipaddress.ip_address(args.host)
+    HOST = str(ipaddress.ip_address(args.host))
     print(f"Valid IP address: {HOST}")
 except ValueError:
     sys.exit(f"Invalid IP address: {args.host}")
-    
 PORT = 65432
 
 cap = cv2.VideoCapture(f"rtsp://{HOST}:8554/video_stream")
