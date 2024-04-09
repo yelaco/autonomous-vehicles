@@ -53,11 +53,11 @@ def tcp_conn():
                 data = d.decode()
                 if "None" not in data:
                     print("Received:", data)
-                    if data == "Go straight":
+                    if "Go straight" in data:
                         Ab.forward()
-                    elif data == "Turn left":
+                    elif "Turn left" in data:
                         Ab.left()
-                    elif data == "Turn right":
+                    elif "Turn right" in data:
                         Ab.right()
     connected = False
             
@@ -130,8 +130,6 @@ ffmpeg_command = [
     "-f", "rtsp",
     f"rtsp://{HOST}:8554/video_stream"
 ]
-rtsp_server = subprocess.Popen("./mediamtx", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-time.sleep(4)
 rtsp_stream = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 time.sleep(4)
 #-----------------------#
@@ -168,5 +166,4 @@ try:
 finally:
     GPIO.cleanup()
     rtsp_stream.terminate()
-    rtsp_server.terminate()
     clean()
