@@ -48,7 +48,7 @@ class CameraBufferCleanerThread(threading.Thread):
 
     def run(self):
         while self.running:
-            ret, self.last_frame = self.camera.read()
+            _, self.last_frame = self.camera.read()
             
 def get_decision(bbox):
     x, w = int(bbox[0]), int(bbox[2])
@@ -177,7 +177,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         cv2.imshow("Frame", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'): 
-            cam_cleaner.running = False
             break 
+    cam_cleaner.running = False
+    time.sleep(2)
     cap.release()
     client_socket.close()    
