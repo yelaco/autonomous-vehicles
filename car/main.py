@@ -106,11 +106,6 @@ def get_sensor_values(distances):
 
 def clean():
     mediamtx_pid = subprocess.check_output(["pidof", "mediamtx"]).decode().strip()
-    # Get the PID of the ffmpeg process
-    ffmpeg_pid = subprocess.check_output(["pidof", "ffmpeg"]).decode().strip()
-    
-    # Send termination signals to the processes
-    os.kill(int(ffmpeg_pid), signal.SIGTERM)
     os.kill(int(mediamtx_pid), signal.SIGTERM)
 
 Ab = AlphaBot()
@@ -133,9 +128,9 @@ ffmpeg_command = [
     f"rtsp://{HOST}:8554/video_stream"
 ]
 rtsp_server = subprocess.Popen("./mediamtx", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-time.sleep(2)
+time.sleep(4)
 rtsp_stream = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-time.sleep(2)
+time.sleep(4)
 #-----------------------#
 
 data = "None"
