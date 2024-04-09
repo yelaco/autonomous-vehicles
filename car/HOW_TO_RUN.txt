@@ -1,11 +1,25 @@
-Vào thư mục /car
-Trước tiên, tạo một session mới để chạy rtsp server
-    screen -S rtsp_server
-Sau đó thoát session này bằng cách nhấn ctrl A + ctrl D
-Giờ chạy lệnh
-    python3 main.py
-Chờ cho đến khi chương trình hiện dòng
-    "Server is listening..."
-Bật terminal ở máy đang chạy (không phải trên pi), vào thư mục /car
-Chạy lệnh
-    python3 tcp_client.py
+Open folder /car
+
+First, we need to create a session for hosting rtsp_server
+    $ screen -S rtsp_server
+
+Then, we host the rtsp_server
+    $ ./mediamtx
+
+Now we can detach the session by holding CTRL and pressing A then D
+
+After coming back to the main session, we run the program 
+    $ python3 main.py
+
+We wait until the program output "Server is listening..."
+
+Now we can run the client side code 
+Note that we need to clone the repo from github first
+    $ git clone https://github.com/minhquang053/autonomous_vehicle.git 
+
+Open folder /car on the client (aka your current computer)
+Run the program with the pi's IP ADDRESS, for example
+    $ python3 tcp_client.py 192.168.121.53  
+
+!!! Please do note that when you want to stop, you stop the program on the client side:
+click the program and press "q", so that both the client and server code can end gracefully

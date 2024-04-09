@@ -110,6 +110,11 @@ HOST = get_ip_addr()
 PORT = 65432
 
 # Start the rtsp stream #
+try:
+    mediamtx_pid = subprocess.check_output(["pidof", "mediamtx"]).decode().strip()
+except:
+    sys.exit("RTSP server hasn't been started. Read HOW_TO_RUN.txt in /car folder")
+
 ffmpeg_command = [
     "ffmpeg",
     "-f", "v4l2",
