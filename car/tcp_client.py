@@ -73,8 +73,8 @@ PORT = 65432
 cap = cv2.VideoCapture(f"rtsp://{HOST}:8554/video_stream")
 cam_cleaner = CameraBufferCleanerThread(cap)
 
-net = cv2.dnn.readNetFromONNX("best.onnx")
-classes = ['obstacle']
+net = cv2.dnn.readNetFromONNX("best1404.onnx")
+classes = ['obstacle', 'parking']
 
 bbox = None
 tracking = False
@@ -151,7 +151,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             if len(boxes) > 0:
                 num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
                 for i in num_retained_boxes:
-                    if classes[classes_ids[i]] == 'obstacle':
+                    if classes[classes_ids[i]] == 'parking':
                         bbox = boxes[i]
                         x1,y1,w,h = bbox
                         label = classes[classes_ids[i]]
