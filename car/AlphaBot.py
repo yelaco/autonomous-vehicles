@@ -124,13 +124,13 @@ class AlphaBot(object):
         self.PWMA.start(30)
         self.PWMB.start(30)
  
-        GPIO.output(self.IN1,GPIO.LOW)
+        GPIO.output(self.IN1,GPIO.HIGH)
  
-        GPIO.output(self.IN2,GPIO.HIGH) # Tien_phai
+        GPIO.output(self.IN2,GPIO.LOW)
  
-        GPIO.output(self.IN3,GPIO.LOW)
+        GPIO.output(self.IN3,GPIO.HIGH)
  
-        GPIO.output(self.IN4,GPIO.HIGH) # Tien_trai
+        GPIO.output(self.IN4,GPIO.LOW)# Tien_trai
  
  
  
@@ -148,17 +148,17 @@ class AlphaBot(object):
  
     def backward(self):
  
-        GPIO.output(self.IN1,GPIO.HIGH)
+        GPIO.output(self.IN1,GPIO.LOW)
  
-        GPIO.output(self.IN2,GPIO.LOW)
+        GPIO.output(self.IN2,GPIO.HIGH)
  
-        GPIO.output(self.IN3,GPIO.HIGH)
+        GPIO.output(self.IN3,GPIO.LOW)
  
-        GPIO.output(self.IN4,GPIO.LOW)
+        GPIO.output(self.IN4,GPIO.HIGH)
  
  
  
-    def right(self):
+    def left(self):
 
         self.PWMA.start(60)
         self.PWMB.start(60)
@@ -173,7 +173,7 @@ class AlphaBot(object):
  
  
  
-    def left(self):
+    def right(self):
  
         self.PWMA.start(60)
         self.PWMB.start(60)
