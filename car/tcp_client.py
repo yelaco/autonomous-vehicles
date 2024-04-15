@@ -108,7 +108,7 @@ obj_label = ""
 
 decision = ""
 
-threshold = int(640 * 480 * 0.7)
+threshold = 150000
 
 # Create a socket object
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -116,7 +116,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
     client_socket.connect((HOST, PORT))
     
     # Main loop
-    while True:
+    while True and decision != "Stop":
         # Read frame from webcam
         if cam_cleaner.last_frame is None:
             continue
@@ -137,10 +137,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
 
                 decision = get_decision(bbox) 
                 
-                if count_red_pixels(frame) > threshold:
-                    decision = "Stop"
-                    tracking = False
-                    break
+                # num_red_pixel = count_red_pixels(frame)
+                # if num_red_pixel > threshold:
+                #     decision = "Stop"
+                #     tracking = False
+                # else:
+                #     print(num_red_pixel)
                     
                 client_socket.sendall(decision.encode())
                 text = obj_label + "{:.2f}".format(conf)
