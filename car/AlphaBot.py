@@ -89,9 +89,9 @@ class AlphaBot(object):
             trig = trigs[i]
             echo = echos[i]
             GPIO.output(trig, GPIO.LOW)
-            time.sleep(0.01)
-            GPIO.output(trig, GPIO.HIGH)
             time.sleep(0.02)
+            GPIO.output(trig, GPIO.HIGH)
+            time.sleep(0.05)
             GPIO.output(trig, GPIO.LOW)
 
             start = time.time()
