@@ -65,7 +65,10 @@ def get_decision(bbox):
 def count_red_pixels(image):
     # Convert image to HSV color space
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
+    h, s, v = cv2.split(hsv)
+    v_eq = cv2.equalizeHist(v)
+    hsv = cv2.merge([h, s, v_eq])
+    
     # Define lower and upper bounds for red color
     lower_red = np.array([0, 100, 100])
     upper_red = np.array([10, 255, 255])
@@ -108,7 +111,7 @@ obj_label = ""
 
 decision = ""
 
-threshold = 150000
+threshold = 180000
 
 # Create a socket object
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
