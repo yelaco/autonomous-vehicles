@@ -49,7 +49,7 @@ class CameraBufferCleanerThread(threading.Thread):
     def run(self):
         while self.running:
             _, self.last_frame = self.camera.read()
-            
+    
 def get_decision(bbox):
     x, w = int(bbox[0]), int(bbox[2])
     cx = int(x + w // 2)
@@ -61,6 +61,32 @@ def get_decision(bbox):
         return "Turn right"
     else:  
         return "Go straight"
+
+def count_red_pixels(image):
+    # Convert image to HSV color space
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    # Define lower and upper bounds for red color
+    lower_red = np.array([0, 100, 100])
+    upper_red = np.array([10, 255, 255])
+
+    # Mask out red pixels
+    mask1 = cv2.inRange(hsv, lower_red, upper_red)
+
+    # Define lower and upper bounds for slightly different red color
+    lower_red2 = np.array([160, 100, 100])
+    upper_red2 = np.array([180, 255, 255])
+
+    # Mask out the second range of red pixels
+    mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+
+    # Combine masks
+    mask = cv2.bitwise_or(mask1, mask2)
+
+    # Count red pixels
+    red_pixel_count = cv2.countNonZero(mask)
+
+    return red_pixel_count
 
 # Define host and port
 try:
@@ -81,6 +107,8 @@ tracking = False
 obj_label = ""
 
 decision = ""
+
+threshold = int(640 * 480 * 0.7)
 
 # Create a socket object
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -109,6 +137,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
 
                 decision = get_decision(bbox) 
                 
+                if count_red_pixels(frame) > threshold:
+                    decision = "Stop"
+                    tracking = False
+                    break
+                    
                 client_socket.sendall(decision.encode())
                 text = obj_label + "{:.2f}".format(conf)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255,0,0), 2)
@@ -137,7 +170,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 if confidence > 0.4:
                     classes_score = row[5:]
                     ind = np.argmax(classes_score)
-                    if classes_score[ind] > 0.2:
+                    if classes_score[ind] > 0.4:
                         classes_ids.append(ind)
                         confidences.append(confidence)
                         cx, cy, w, h = row[:4]
@@ -154,16 +187,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                     if classes[classes_ids[i]] == 'parking':
                         bbox = boxes[i]
                         x1,y1,w,h = bbox
-                        label = classes[classes_ids[i]]
+                        obj_label = classes[classes_ids[i]]
                         conf = confidences[i]
-                        text = label + "{:.2f}".format(conf)
+                        text = obj_label + "{:.2f}".format(conf)
                         cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(255,0,0),2)
                         cv2.putText(frame, text, (x1,y1-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
                         cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
                         tracker = init_tracker(frame, bbox)
                         tracking = True
                         client_socket.sendall(get_decision(bbox).encode())
-                        break
+                        
             
             if not tracking:
                 client_socket.sendall("None".encode())

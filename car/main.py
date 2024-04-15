@@ -52,13 +52,19 @@ def tcp_conn():
                 
                 data = d.decode()
                 if "None" not in data:
-                    print("Received:", data)
                     if "Go straight" in data:
                         Ab.forward()
+                        print("Received: Go straight")
                     elif "Turn left" in data:
                         Ab.left()
+                        print("Received: Turn left")
                     elif "Turn right" in data:
                         Ab.right()
+                        print("Received: Turn right")
+                    elif "Stop" in data:
+                        Ab.stop()
+                        print("Received: Stop")
+                        
     connected = False
             
 def greedy_policy(Qtable, state):
