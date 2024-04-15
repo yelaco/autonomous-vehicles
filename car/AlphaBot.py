@@ -102,7 +102,7 @@ class AlphaBot(object):
                 if round(pulse_start - start, 3) >= 0.500:
                     sys.exit(f"HR-SO4 #{i+1} timed out")
             pulse_end = pulse_start
-            while GPIO.input(echo) == 1 and pulse_end - pulse_start < 0.001:
+            while GPIO.input(echo) == 1:
                 pulse_end = time.time()
 
             pulse_duration = pulse_end - pulse_start
