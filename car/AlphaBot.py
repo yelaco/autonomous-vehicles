@@ -89,9 +89,9 @@ class AlphaBot(object):
             trig = trigs[i]
             echo = echos[i]
             GPIO.output(trig, GPIO.LOW)
-            time.sleep(0.02)
+            time.sleep(0.01)
             GPIO.output(trig, GPIO.HIGH)
-            time.sleep(0.05)
+            time.sleep(0.02)
             GPIO.output(trig, GPIO.LOW)
 
             start = time.time()
@@ -99,10 +99,10 @@ class AlphaBot(object):
             #Note: Added timeout for handling sensors
             while GPIO.input(echo) == 0:
                 pulse_start = time.time()
-                if round(pulse_start - start, 3) >= 0.500:
+                if round(pulse_start - start, 3) >= 2.00:
                     sys.exit(f"HR-SO4 #{i+1} timed out")
             pulse_end = pulse_start
-            while GPIO.input(echo) == 1:
+            while GPIO.input(echo) == 1 and pulse_end - pulse_start < 0.01:
                 pulse_end = time.time()
 
             pulse_duration = pulse_end - pulse_start

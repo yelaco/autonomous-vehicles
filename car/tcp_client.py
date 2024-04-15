@@ -111,7 +111,7 @@ obj_label = ""
 
 decision = ""
 
-threshold = 180000
+threshold = 120000
 
 # Create a socket object
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -140,12 +140,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
 
                 decision = get_decision(bbox) 
                 
-                # num_red_pixel = count_red_pixels(frame)
-                # if num_red_pixel > threshold:
-                #     decision = "Stop"
-                #     tracking = False
-                # else:
-                #     print(num_red_pixel)
+                num_red_pixel = count_red_pixels(frame)
+                if num_red_pixel > threshold:
+                    decision = "Stop"
+                    tracking = False
+                else:
+                    print(num_red_pixel)
                     
                 client_socket.sendall(decision.encode())
                 text = obj_label + "{:.2f}".format(conf)

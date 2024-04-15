@@ -149,8 +149,9 @@ try:
     tcp_conn_thread.start()
 
     while connected:
-        distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
+        # distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
         if "None" in data:
+            distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
             print(distances, end=" ")
             state = get_sensor_values(distances)
 
@@ -164,10 +165,10 @@ try:
             elif action == 2:
                 print("Turn right")
                 Ab.right()
-        else:
-            if distances[2] < 10:
-                Ab.stop()
-                print("Stopped")
+        # else:
+        #     if distances[2] < 10:
+        #         Ab.stop()
+        #         print("Stopped")
  
 finally:
     GPIO.cleanup()
