@@ -108,6 +108,7 @@ classes = ['obstacle', 'parking']
 bbox = None
 tracking = False
 obj_label = ""
+conf = -1
 
 decision = ""
 
@@ -199,7 +200,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                     bbox = boxes[parking_id]
                     x1,y1,w,h = bbox
                     obj_label = classes[classes_ids[parking_id]]
-                    text = obj_label + "{:.2f}".format(max_conf)
+                    conf = max_conf
+                    text = obj_label + "{:.2f}".format(conf)
                     cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(255,0,0),2)
                     cv2.putText(frame, text, (x1,y1-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
                     cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
