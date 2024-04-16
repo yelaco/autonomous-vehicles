@@ -123,10 +123,8 @@ while True:
                     box = np.array([x1,y1,wv,hv])
                     boxes.append(box)
 
-        indices = cv2.dnn.NMSBoxes(boxes,confidences,0.25,0.45)
-        
         if len(boxes) > 0:
-            num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
+            num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.25,0.45)
             for i in num_retained_boxes:
                 bbox = boxes[i]
                 x1,y1,w,h = bbox
