@@ -128,17 +128,16 @@ while True:
         if len(boxes) > 0:
             num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
             for i in num_retained_boxes:
-                if classes[classes_ids[i]] == 'parking':
-                    bbox = boxes[i]
-                    x1,y1,w,h = bbox
-                    obj_label = classes[classes_ids[i]]
-                    conf = confidences[i]
-                    text = obj_label + "{:.2f}".format(conf)
-                    cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(255,0,0),2)
-                    cv2.putText(frame, text, (x1,y1-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
-                    cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
-                    tracker = init_tracker(frame, bbox)
-                    tracking = True
+                bbox = boxes[i]
+                x1,y1,w,h = bbox
+                obj_label = classes[classes_ids[i]]
+                conf = confidences[i]
+                text = obj_label + "{:.2f}".format(conf)
+                cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(255,0,0),2)
+                cv2.putText(frame, text, (x1,y1-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
+                cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
+                # tracker = init_tracker(frame, bbox)
+                # tracking = True
     
      # Calculate Frames per second (FPS)
     fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
