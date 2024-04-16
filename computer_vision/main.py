@@ -48,7 +48,7 @@ net = cv2.dnn.readNetFromONNX("best.onnx")
 # file = open("coco.txt","r")
 # classes = file.read().split('\n')
 # print(classes)
-classes = ['obstacle', 'parking']
+classes = ['parking', 'obstacle']
 
 bbox = None
 tracking = False
