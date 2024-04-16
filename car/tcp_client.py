@@ -188,19 +188,24 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
 
             if len(boxes) > 0:
                 num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.25,0.45)
+                parking_id = -1
+                max_conf = -1
                 for i in num_retained_boxes:
-                    if classes[classes_ids[i]] == 'parking':
-                        bbox = boxes[i]
-                        x1,y1,w,h = bbox
-                        obj_label = classes[classes_ids[i]]
-                        conf = confidences[i]
-                        text = obj_label + "{:.2f}".format(conf)
-                        cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(255,0,0),2)
-                        cv2.putText(frame, text, (x1,y1-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
-                        cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
-                        tracker = init_tracker(frame, bbox)
-                        tracking = True
-                        client_socket.sendall(get_decision(bbox).encode())
+                    if classes[classes_ids[i]] == 'parking' and max_conf < confidences[i]:
+                        parking_id = i
+                        max_conf = confidences[i]
+                    
+                if parking_id > -1:
+                    bbox = boxes[parking_id]
+                    x1,y1,w,h = bbox
+                    obj_label = classes[classes_ids[parking_id]]
+                    text = obj_label + "{:.2f}".format(max_conf)
+                    cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(255,0,0),2)
+                    cv2.putText(frame, text, (x1,y1-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
+                    cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
+                    tracker = init_tracker(frame, bbox)
+                    tracking = True
+                    client_socket.sendall(get_decision(bbox).encode())
                         
             
             if not tracking:
