@@ -48,7 +48,7 @@ net = cv2.dnn.readNetFromONNX("best.onnx")
 # file = open("coco.txt","r")
 # classes = file.read().split('\n')
 # print(classes)
-classes = ['obstacle']
+classes = ['obstacle', 'parking']
 
 bbox = None
 tracking = False
@@ -60,11 +60,13 @@ decision = ""
 while True:
     # Read frame from webcam
     if cam_cleaner.last_frame is None:
-        time.sleep(0.1)
         continue    
 
     frame = cam_cleaner.last_frame
 
+    # Start timer
+    timer = cv2.getTickCount()
+        
     if tracking:
         ok, bbox = tracker.update(frame)
         # Draw bounding box
@@ -123,21 +125,26 @@ while True:
 
         indices = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
         
-        for i in indices:
-            x1,y1,w,h = boxes[i]
-            label = classes[classes_ids[i]]
-            conf = confidences[i]
-            text = label + "{:.2f}".format(conf)
-            cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(255,0,0),2)
-            cv2.putText(frame, text, (x1,y1-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
-            cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
-            
         if len(boxes) > 0:
-            bbox = boxes[0]
-            tracking = True
-            tracker = init_tracker(frame, bbox)
-            obj_label = classes[classes_ids[0]]
-            
+            num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
+            for i in num_retained_boxes:
+                if classes[classes_ids[i]] == 'parking':
+                    bbox = boxes[i]
+                    x1,y1,w,h = bbox
+                    obj_label = classes[classes_ids[i]]
+                    conf = confidences[i]
+                    text = obj_label + "{:.2f}".format(conf)
+                    cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(255,0,0),2)
+                    cv2.putText(frame, text, (x1,y1-2),cv2.FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2)
+                    cv2.putText(frame, decision, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
+                    tracker = init_tracker(frame, bbox)
+                    tracking = True
+    
+     # Calculate Frames per second (FPS)
+    fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
+    # Display FPS on frame
+    cv2.putText(frame, "FPS : " + str(int(fps)), (20,50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
+
     # Display frame with bounding box
     cv2.imshow("Frame", frame)
 
