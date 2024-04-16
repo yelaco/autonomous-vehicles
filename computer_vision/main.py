@@ -109,10 +109,10 @@ while True:
         for i in range(rows):
             row = detections[i]
             confidence = row[4]
-            if confidence > 0.4:
+            if confidence >= 0.4:
                 classes_score = row[5:]
                 ind = np.argmax(classes_score)
-                if classes_score[ind] > 0.2:
+                if classes_score[ind] >= 0.25:
                     classes_ids.append(ind)
                     confidences.append(confidence)
                     cx, cy, w, h = row[:4]
@@ -123,7 +123,7 @@ while True:
                     box = np.array([x1,y1,wv,hv])
                     boxes.append(box)
 
-        indices = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
+        indices = cv2.dnn.NMSBoxes(boxes,confidences,0.25,0.45)
         
         if len(boxes) > 0:
             num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
