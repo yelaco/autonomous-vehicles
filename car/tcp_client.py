@@ -172,10 +172,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             for i in range(rows):
                 row = detections[i]
                 confidence = row[4]
-                if confidence > 0.4:
+                if confidence >= 0.4:
                     classes_score = row[5:]
                     ind = np.argmax(classes_score)
-                    if classes_score[ind] > 0.4:
+                    if classes_score[ind] >= 0.25:
                         classes_ids.append(ind)
                         confidences.append(confidence)
                         cx, cy, w, h = row[:4]
@@ -187,7 +187,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                         boxes.append(box)
 
             if len(boxes) > 0:
-                num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.5,0.5)
+                num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.25,0.45)
                 for i in num_retained_boxes:
                     if classes[classes_ids[i]] == 'parking':
                         bbox = boxes[i]
