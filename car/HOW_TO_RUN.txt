@@ -1,3 +1,8 @@
+* Required: 
+    opencv-python and opencv-contrib-python (if using python)
+    opencv and opencv-contrib built from source (if using c++)
+
+* Guide to run:
 Open folder /car
 
 First, we need to create a session for hosting rtsp_server
@@ -11,7 +16,7 @@ Now we can detach the session by holding CTRL and pressing A then D
 After coming back to the main session, we run the program 
     $ python3 main.py
 
-We wait until the program output "Server is listening..."
+We wait until the program output "Server is listening at ..."
 
 Now we can run the client side code 
 Note that we need to clone the repo from github first
@@ -22,6 +27,6 @@ Run the program with the pi's IP ADDRESS, for example
     $ python3 tcp_client.py 192.168.121.53  
 or run the c++ version
     $ ./tcp_client
-    
+
 !!! Please do note that when you want to stop, you stop the program on the client side:
 click the program and press "q", so that both the client and server code can end gracefully
