@@ -4,13 +4,10 @@ import pickle
 import numpy as np
 import threading
 import socket
-import subprocess
 import re
 import sys
 import subprocess
 import time
-import os
-import signal
 
 def get_ip_addr():
     # Run ifconfig command to get network interface information

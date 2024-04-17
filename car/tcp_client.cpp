@@ -7,6 +7,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <thread>
+#include <atomic>
+#include <string>
 
 std::vector<std::string> load_class_list()
 {
@@ -44,16 +47,58 @@ cv::Ptr<cv::Tracker> init_tracker(cv::Mat frame, cv::Rect2d bbox) {
     return tracker;
 }
 
-std::string get_decision(cv::Rect bbox) {
-    return "Decision";
+std::string get_decision(cv::Rect bbox, double width) {
+    double cx = bbox.x + bbox.width / 2;
+
+    // Calculate slope
+    if (cx < width / 2 - 50)
+        return "Turn left";
+    else if (cx > width / 2 + 50) 
+        return "Turn right";
+    else  
+        return "Go straight";
 }
 
-const std::vector<cv::Scalar> colors = {cv::Scalar(255, 255, 0), cv::Scalar(0, 255, 0), cv::Scalar(0, 255, 255), cv::Scalar(255, 0, 0)};
+int count_red_pixels(cv::Mat image) {
+    // Convert image to HSV color space
+    cv::Mat hsv;
+    cv::cvtColor(image, hsv, cv::COLOR_BGR2HSV);
+    std::vector<cv::Mat> channels;
+    cv::split(hsv, channels);
+    cv::Mat v_eq;
+    cv::equalizeHist(channels[2], v_eq);
+    cv::merge(std::vector<cv::Mat>{channels[0], channels[1], v_eq}, hsv);
+    
+    // Define lower and upper bounds for red color
+    cv::Scalar lower_red(0, 100, 100);
+    cv::Scalar upper_red(10, 255, 255);
+
+    // Mask out red pixels
+    cv::Mat mask1;
+    cv::inRange(hsv, lower_red, upper_red, mask1);
+
+    // Define lower and upper bounds for slightly different red color
+    cv::Scalar lower_red2(160, 100, 100);
+    cv::Scalar upper_red2(180, 255, 255);
+
+    // Mask out the second range of red pixels
+    cv::Mat mask2;
+    cv::inRange(hsv, lower_red2, upper_red2, mask2);
+
+    // Combine masks
+    cv::Mat mask;
+    cv::bitwise_or(mask1, mask2, mask);
+
+    // Count red pixels
+    int red_pixel_count = cv::countNonZero(mask);
+
+    return red_pixel_count;
+}
 
 const float INPUT_WIDTH = 640.0;
 const float INPUT_HEIGHT = 640.0;
-const float SCORE_THRESHOLD = 0.2;
-const float NMS_THRESHOLD = 0.4;
+const float SCORE_THRESHOLD = 0.25;
+const float NMS_THRESHOLD = 0.45;
 const float CONFIDENCE_THRESHOLD = 0.4;
 
 struct Detection
@@ -87,29 +132,24 @@ void detect(cv::Mat &image, cv::dnn::Net &net, std::vector<Detection> &output, c
     
     float *data = (float *)outputs[0].data;
 
-    const int dimensions = 85;
-    const int rows = 25200;
+    const int dimensions = className.size() + 5;
+    const int rows = outputs[0].size().width;
     
     std::vector<int> class_ids;
     std::vector<float> confidences;
     std::vector<cv::Rect> boxes;
 
     for (int i = 0; i < rows; ++i) {
-
         float confidence = data[4];
         if (confidence >= CONFIDENCE_THRESHOLD) {
-
-            float * classes_scores = data + 5;
+            float * classes_scores = data + dimensions;
             cv::Mat scores(1, className.size(), CV_32FC1, classes_scores);
             cv::Point class_id;
             double max_class_score;
             minMaxLoc(scores, 0, &max_class_score, 0, &class_id);
-            if (max_class_score > SCORE_THRESHOLD) {
-
+            if (max_class_score >= SCORE_THRESHOLD) {
                 confidences.push_back(confidence);
-
                 class_ids.push_back(class_id.x);
-
                 float x = data[0];
                 float y = data[1];
                 float w = data[2];
@@ -120,21 +160,29 @@ void detect(cv::Mat &image, cv::dnn::Net &net, std::vector<Detection> &output, c
                 int height = int(h * y_factor);
                 boxes.push_back(cv::Rect(left, top, width, height));
             }
-
         }
 
-        data += 85;
+        data += dimensions;
     }
 
-    std::vector<int> nms_result;
-    cv::dnn::NMSBoxes(boxes, confidences, SCORE_THRESHOLD, NMS_THRESHOLD, nms_result);
-    for (int i = 0; i < nms_result.size(); i++) {
-        int idx = nms_result[i];
-        Detection result;
-        result.class_id = class_ids[idx];
-        result.confidence = confidences[idx];
-        result.box = boxes[idx];
-        output.push_back(result);
+    if (boxes.size() > 0) {
+        std::vector<int> nms_result;
+        cv::dnn::NMSBoxes(boxes, confidences, SCORE_THRESHOLD, NMS_THRESHOLD, nms_result);
+        for (int i = 0; i < nms_result.size(); i++) {
+            int idx = nms_result[i];
+            Detection result;
+            result.class_id = class_ids[idx];
+            result.confidence = confidences[idx];
+            result.box = boxes[idx];
+            output.push_back(result);
+        }
+    }
+}
+
+void send_data(int sockfd, std::string data) {
+    if (send(sockfd, data.c_str(), data.length(), 0) < 0) {
+        std::cerr << "Error sending data" << std::endl;
+        exit(1);
     }
 }
 
@@ -161,7 +209,7 @@ int main(int argc, char**argv)
     struct sockaddr_in serverAddr;
     memset(&serverAddr, 0, sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(8080); // Port number
+    serverAddr.sin_port = htons(port); // Port number
 
     // Convert IP address from presentation format to network format
     if (inet_pton(AF_INET, server_ip.c_str(), &serverAddr.sin_addr) <= 0) {
@@ -170,84 +218,109 @@ int main(int argc, char**argv)
     }
 
     // Connect to the server
-    // if (connect(sockfd, (const sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-    //     std::cerr << "Connection failed" << std::endl;
-    //     return 1;
-    // }
+    if (connect(sockfd, (const sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        std::cerr << "Connection failed" << std::endl;
+        return 1;
+    }
 
-    cv::Mat frame;
-    cv::VideoCapture cap("rtsp://" + server_ip + ":8554/video_stream?dummy=test.mjpg", cv::CAP_FFMPEG);
-    
     bool is_tracking = false;
     cv::Ptr<cv::Tracker> tracker{};
     cv::Rect bbox{};
     std::string decision{"None"};
     std::string obj_label{};
-    int conf{-1};
+    float conf{-1.0};
+    int stop_threshold = 120000;
 
+    cv::Mat frame;
+    cv::namedWindow("Autonomous Vehicle");
+    cv::VideoCapture cap("rtsp://" + server_ip + ":8554/video_stream", cv::CAP_GSTREAMER);
+    // cv::VideoCapture cap("final.mp4");
+    if (!cap.isOpened()) {
+        std::cout << "No video stream detected" << '\n';
+        system("pause");
+        return -1;
+    }
+    // cap.set(cv::CAP_PROP_BUFFERSIZE, 5);
+
+    double vid_height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+    double vid_width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+    float fps{-1};
+    
     while (true)
     {
         cap >> frame;
-        if (frame.empty()) {
-            continue; // to be replaced with cam cleaner later
+
+        if (frame.empty()){ //Breaking the loop if no video frame is detected//
+            break;
         }
 
-        cv::imshow("frame", frame);
-        continue;
+        auto timer = cv::getTickCount();
+
+        int num_red_pixel = count_red_pixels(frame);
+        if (num_red_pixel > stop_threshold) {
+            decision = "Stop";
+            is_tracking = false;
+            send_data(sockfd, decision); 
+        } else {
+            std::cout << num_red_pixel << '\n'; 
+        }
+
         if (is_tracking) 
         {
             if (tracker->update(frame, bbox)) 
             {
                 int cx = int(bbox.x + bbox.width / 2);
                 int cy = int(bbox.y + bbox.height / 2);
-                cv::line(frame, cv::Point(cx, cy), cv::Point(INPUT_WIDTH / 2, INPUT_HEIGHT), (255,255,255), 2);
+                cv::line(frame, cv::Point(cx, cy), cv::Point(vid_width / 2, vid_height), cv::Scalar(255,255,255), 2);
 
-                decision = get_decision(bbox);
-                
-                // if (send(sockfd, decision.c_str(), decision.length(), 0) < 0) {
-                //     std::cerr << "Error sending data" << std::endl;
-                //     return 1;
-                // }
+                decision = get_decision(bbox, vid_width);
+                  
+                send_data(sockfd, decision); 
 
-                std::string text = obj_label;
-                cv::rectangle(frame, cv::Point(bbox.x, bbox.y), cv::Point(bbox.x + bbox.width, bbox.y + bbox.height), (255,0,0), 2);
-                cv::putText(frame, text, cv::Point(bbox.x,bbox.y-2),cv::FONT_HERSHEY_COMPLEX, 0.7,(255,0,255),2);
-                cv::putText(frame, decision, cv::Point(160, 80), cv::FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2); 
+                std::ostringstream text;
+                text << obj_label << " " << std::fixed << std::setprecision(2) << conf;
+                cv::rectangle(frame, cv::Point(bbox.x, bbox.y), cv::Point(bbox.x + bbox.width, bbox.y + bbox.height), cv::Scalar(255,0,0), 2);
+                cv::putText(frame, text.str(), cv::Point(bbox.x,bbox.y-2),cv::FONT_HERSHEY_COMPLEX, 0.7,cv::Scalar(255,0,255),2);
+                cv::putText(frame, decision, cv::Point(160, 80), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(0, 0, 255), 2); 
             } else {
                 is_tracking = false;
             }
-        }
-        std::vector<Detection> output;
-        detect(frame, net, output, class_list);
-        
-        int detections = output.size();
-
-        for (int i = 0; i < detections; ++i)
-        {
-            auto detection = output[i];
-            auto bbox = detection.box;
-            auto classId = detection.class_id;
-            if (class_list[detection.class_id] == "parking")
+        } else {
+            std::vector<Detection> output;
+            detect(frame, net, output, class_list);
+            int parking_id{-1};
+            float max_conf{-1.0};
+            for (int i = 0; i < output.size(); ++i)
             {
-                const auto color = colors[classId % colors.size()];
-                // add overlay and init tracking
+                auto detection = output[i];
+                if (class_list[detection.class_id] == "parking" && max_conf < detection.confidence)
+                {
+                    parking_id = i;
+                    max_conf = detection.confidence;
+                } 
+            }
+            if (parking_id > -1) {
+                bbox = output[parking_id].box;
+                obj_label = class_list[output[parking_id].class_id];
+                conf = max_conf;
                 tracker = init_tracker(frame, bbox);
-                is_tracking = true;
-                break;
+                is_tracking = true; 
+                send_data(sockfd, decision); 
             }
         }
 
-        cv::imshow("output", frame);
+        cv::putText(frame, "FPS: " + std::to_string((int) (cv::getTickFrequency() / (cv::getTickCount() - timer))),cv::Point(10, 25), cv::FONT_HERSHEY_SIMPLEX, 0.75, cv::Scalar(50,170,50), 2);
 
-        if (cv::waitKey(1) != -1)
-        {
-            cap.release();
-            std::cout << "finished by user\n";
+        cv::imshow("Autonomous Vehicle", frame);
+
+        char c = (char) cv::waitKey(1);//Allowing 25 milliseconds frame processing time and initiating break condition//
+        if (c == 27){ //If 'Esc' is entered break the loop//
             break;
         }
     }
 
-    // close(sockfd);
-    
+    cap.release();
+    close(sockfd);
+
     return 0;
 }
