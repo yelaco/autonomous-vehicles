@@ -193,11 +193,8 @@ int main(int argc, char**argv)
     std::getline(std::cin, server_ip);
     int port{65432};
     std::vector<std::string> class_list = load_class_list();
-
-    bool is_cuda = argc > 1 && strcmp(argv[1], "cuda") == 0;
     
-    cv::dnn::Net net;
-    load_net(net, is_cuda);
+    auto net = cv::dnn::readNet("config_files/best1404.onnx");
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
@@ -233,8 +230,7 @@ int main(int argc, char**argv)
 
     cv::Mat frame;
     cv::namedWindow("Autonomous Vehicle");
-    cv::VideoCapture cap("rtsp://" + server_ip + ":8554/video_stream", cv::CAP_GSTREAMER);
-    // cv::VideoCapture cap("final.mp4");
+    cv::VideoCapture cap("rtsp://" + server_ip + ":8554/video_stream");
     if (!cap.isOpened()) {
         std::cout << "No video stream detected" << '\n';
         system("pause");
@@ -246,7 +242,7 @@ int main(int argc, char**argv)
     double vid_width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
     float fps{-1};
     
-    while (true)
+    while (true && "Stop" != decision)
     {
         cap >> frame;
 
@@ -313,7 +309,7 @@ int main(int argc, char**argv)
 
         cv::imshow("Autonomous Vehicle", frame);
 
-        char c = (char) cv::waitKey(1);//Allowing 25 milliseconds frame processing time and initiating break condition//
+        char c = (char) cv::waitKey(1);
         if (c == 27){ //If 'Esc' is entered break the loop//
             break;
         }
@@ -321,6 +317,7 @@ int main(int argc, char**argv)
 
     cap.release();
     close(sockfd);
+    std::cout << "Finished" << '\n';
 
     return 0;
 }

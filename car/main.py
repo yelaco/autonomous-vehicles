@@ -121,7 +121,7 @@ except:
 ffmpeg_command = [
     "ffmpeg",
     "-f", "v4l2",
-    "-framerate", "90",
+    "-framerate", "60",
     "-re",
     "-stream_loop", "-1",
     "-video_size", "640x480",
