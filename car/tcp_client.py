@@ -102,7 +102,7 @@ PORT = 65432
 cap = cv2.VideoCapture(f"rtsp://{HOST}:8554/video_stream")
 cam_cleaner = CameraBufferCleanerThread(cap)
 
-net = cv2.dnn.readNetFromONNX("best1404.onnx")
+net = cv2.dnn.readNetFromONNX("config_files/best1404.onnx")
 classes = ['obstacle', 'parking']
 
 bbox = None

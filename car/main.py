@@ -141,7 +141,7 @@ time.sleep(4)
 data = "None"
 connected = True
 
-with open('q_table.pkl', 'rb') as f:
+with open('config_files/q_table.pkl', 'rb') as f:
     Qtable_rlcar = pickle.load(f)
 
 try:
