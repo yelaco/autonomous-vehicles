@@ -144,11 +144,12 @@ with open('config_files/q_table.pkl', 'rb') as f:
 try:
     tcp_conn_thread = threading.Thread(target=tcp_conn)
     tcp_conn_thread.start()
+    
+    distances = [100, 100, 100, 100, 100]
 
     while connected:
-        distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
         if "None" in data:
-            # distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
+            distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
             print(distances, end=" ")
             state = get_sensor_values(distances)
 

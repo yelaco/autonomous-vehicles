@@ -1,7 +1,6 @@
 import RPi.GPIO as GPIO
  
 import time
-import sys
 
 #from mpu6050 import mpu6050
  
@@ -9,7 +8,7 @@ import sys
 class AlphaBot(object):
   
  
-    def __init__(self,in1=13,in2=12,ena=6,in3=21,in4=20,enb=26, trig_1=17, echo_1=18, trig_2=23, echo_2=24, trig_3=27, echo_3=22,trig_4=4,echo_4=25,trig_5=16,echo_5=19):
+    def __init__(self,in1=13,in2=12,ena=6,in3=21,in4=20,enb=26, trig_1=17, echo_1=18, trig_2=23, echo_2=5, trig_3=27, echo_3=22,trig_4=4,echo_4=25,trig_5=16,echo_5=19):
  
         self.IN1 = in1
  
@@ -94,20 +93,19 @@ class AlphaBot(object):
             time.sleep(0.02)
             GPIO.output(trig, GPIO.LOW)
 
-            start = time.time()
-            pulse_start = start
-            #Note: Added timeout for handling sensors
             while GPIO.input(echo) == 0:
-                pulse_start = time.time()
-                if round(pulse_start - start, 3) >= 2.00:
-                    sys.exit(f"HR-SO4 #{i+1} timed out")
-            pulse_end = pulse_start
-            while GPIO.input(echo) == 1 and pulse_end - pulse_start < 0.01:
-                pulse_end = time.time()
+                start = time.time()
+            while GPIO.input(echo) == 1:
+                stop = time.time()
 
-            pulse_duration = pulse_end - pulse_start
+            # calculator
+            elapsed = stop - start
 
-            distances[i] = pulse_duration * 17000 - 5
+            stop = time.time()
+            # v (cm/s)
+            distance = elapsed * 34000
+            distance = distance / 2
+            distances[i] = distance - 2 
 
         return distances
 
@@ -124,13 +122,13 @@ class AlphaBot(object):
         self.PWMA.start(30)
         self.PWMB.start(30)
  
-        GPIO.output(self.IN1,GPIO.HIGH)
+        GPIO.output(self.IN1,GPIO.HIGH) # Tien_phai
  
-        GPIO.output(self.IN2,GPIO.LOW)
+        GPIO.output(self.IN2,GPIO.LOW) # Lui_phai
  
-        GPIO.output(self.IN3,GPIO.HIGH)
+        GPIO.output(self.IN3,GPIO.HIGH) # Tien_trai
  
-        GPIO.output(self.IN4,GPIO.LOW)# Tien_trai
+        GPIO.output(self.IN4,GPIO.LOW) # Lui_trai
  
  
  
@@ -158,26 +156,11 @@ class AlphaBot(object):
  
  
  
-    def left(self):
-
-        self.PWMA.start(60)
-        self.PWMB.start(60)
- 
-        GPIO.output(self.IN1,GPIO.LOW)
- 
-        GPIO.output(self.IN2,GPIO.HIGH)
- 
-        GPIO.output(self.IN3,GPIO.LOW)
- 
-        GPIO.output(self.IN4,GPIO.LOW)
- 
- 
- 
     def right(self):
- 
+
         self.PWMA.start(60)
         self.PWMB.start(60)
-
+ 
         GPIO.output(self.IN1,GPIO.LOW)
  
         GPIO.output(self.IN2,GPIO.LOW)
@@ -185,6 +168,21 @@ class AlphaBot(object):
         GPIO.output(self.IN3,GPIO.LOW)
  
         GPIO.output(self.IN4,GPIO.HIGH)
+ 
+ 
+ 
+    def left(self):
+ 
+        self.PWMA.start(60)
+        self.PWMB.start(60)
+
+        GPIO.output(self.IN1,GPIO.LOW)
+ 
+        GPIO.output(self.IN2,GPIO.HIGH)
+ 
+        GPIO.output(self.IN3,GPIO.LOW)
+ 
+        GPIO.output(self.IN4,GPIO.LOW)
  
        
  
