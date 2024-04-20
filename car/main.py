@@ -162,7 +162,7 @@ try:
                 print("Turn right")
                 Ab.right()
         else:
-            if distances[2] <= 5:
+            if distances[2] <= 3:
                 Ab.stop()
                 connected = False
                 print(f"{distances} Stopped")
