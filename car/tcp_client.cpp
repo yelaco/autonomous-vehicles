@@ -292,7 +292,6 @@ int main(int argc, char**argv)
                 if (num_red_pixel > stop_threshold) {
                     decision = "Stop";
                     is_tracking = false;
-                    send_data(sockfd, decision); 
                 } else {
                     std::cout << num_red_pixel << '\n'; 
                 }
