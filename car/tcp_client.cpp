@@ -230,7 +230,7 @@ int main(int argc, char**argv)
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        std::cerr << "Error creating socket" << std::endl;
+        std::cerr << "Connected closed" << std::endl;
         return 1;
     }
 
