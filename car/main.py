@@ -165,7 +165,7 @@ try:
             if distances[2] <= 5:
                 Ab.stop()
                 connected = False
-                print("Stopped")
+                print(f"{distances} Stopped")
  
 finally:
     GPIO.cleanup()

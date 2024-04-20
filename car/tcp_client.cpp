@@ -203,11 +203,18 @@ public:
     void run() {
         while (running) {
             camera >> last_frame;
+            if (last_frame.empty()) {
+                running = false;
+            }
         }
     }
 
     cv::Mat get_last_frame() {
         return this->last_frame;
+    }
+
+    bool connected() {
+        return this->running;
     }
 };
 
@@ -268,7 +275,7 @@ int main(int argc, char**argv)
     double vid_width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
     float fps{-1};
     
-    while (true && "Stop" != decision)
+    while ("Stop" != decision && cam_cleaner.connected())
     {
         frame = cam_cleaner.get_last_frame();
 
