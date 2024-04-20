@@ -48,7 +48,7 @@ def tcp_conn():
                     break
                 
                 data = d.decode()
-                if "None" not in data:
+                if not ("None" in data or Ab.shutdown):
                     if "Go straight" in data:
                         Ab.forward()
                         print("Received: Go straight")
@@ -165,6 +165,7 @@ try:
             if distances[2] <= 3:
                 Ab.stop()
                 connected = False
+                Ab.shutdown = True
                 print(f"{distances} Stopped")
  
 finally:

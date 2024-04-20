@@ -78,6 +78,8 @@ class AlphaBot(object):
         self.PWMA.start(40)
  
         self.PWMB.start(40)
+
+        self.shutdown = False
  
     def SR04(self):
         trigs=  [self.TRIG_3, self.TRIG_4, self.TRIG_2, self.TRIG_5, self.TRIG_1]
