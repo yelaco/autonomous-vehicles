@@ -186,6 +186,31 @@ void send_data(int sockfd, std::string data) {
     }
 }
 
+class CameraBufferCleanerThread {
+private:
+    cv::VideoCapture camera;
+    cv::Mat last_frame;
+    bool running;
+
+public:
+    CameraBufferCleanerThread(cv::VideoCapture cam)
+        : camera(cam), running(true) {
+        // Start the thread
+        std::thread t(&CameraBufferCleanerThread::run, this);
+        t.detach(); // Detach the thread so it can run independently
+    }
+
+    void run() {
+        while (running) {
+            camera >> last_frame;
+        }
+    }
+
+    cv::Mat get_last_frame() {
+        return this->last_frame;
+    }
+};
+
 int main(int argc, char**argv)
 {
     std::cout << "Enter pi's ip address: ";
@@ -237,6 +262,7 @@ int main(int argc, char**argv)
         return -1;
     }
     // cap.set(cv::CAP_PROP_BUFFERSIZE, 5);
+    auto cam_cleaner = CameraBufferCleanerThread(cap);
 
     double vid_height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
     double vid_width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
@@ -244,22 +270,13 @@ int main(int argc, char**argv)
     
     while (true && "Stop" != decision)
     {
-        cap >> frame;
+        frame = cam_cleaner.get_last_frame();
 
-        if (frame.empty()){ //Breaking the loop if no video frame is detected//
-            break;
+        if (frame.empty()){
+            continue;
         }
 
         auto timer = cv::getTickCount();
-
-        int num_red_pixel = count_red_pixels(frame);
-        if (num_red_pixel > stop_threshold) {
-            decision = "Stop";
-            is_tracking = false;
-            send_data(sockfd, decision); 
-        } else {
-            std::cout << num_red_pixel << '\n'; 
-        }
 
         if (is_tracking) 
         {
@@ -270,6 +287,15 @@ int main(int argc, char**argv)
                 cv::line(frame, cv::Point(cx, cy), cv::Point(vid_width / 2, vid_height), cv::Scalar(255,255,255), 2);
 
                 decision = get_decision(bbox, vid_width);
+
+                int num_red_pixel = count_red_pixels(frame);
+                if (num_red_pixel > stop_threshold) {
+                    decision = "Stop";
+                    is_tracking = false;
+                    send_data(sockfd, decision); 
+                } else {
+                    std::cout << num_red_pixel << '\n'; 
+                }
                   
                 send_data(sockfd, decision); 
 

@@ -41,7 +41,7 @@ def tcp_conn():
         with conn:
             print('Connected by', addr)
             
-            while True:
+            while connected:
                 # Receive data from the client
                 d = conn.recv(1024)
                 if not d:
@@ -166,6 +166,7 @@ try:
         else:
             if distances[2] < 10:
                 Ab.stop()
+                connected = False
                 print("Stopped")
  
 finally:
