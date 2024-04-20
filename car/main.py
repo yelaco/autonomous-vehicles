@@ -168,5 +168,6 @@ try:
                 print(f"{distances} Stopped")
  
 finally:
+    time.sleep(2)
     GPIO.cleanup()
     rtsp_stream.terminate()
