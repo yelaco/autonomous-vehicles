@@ -181,7 +181,7 @@ void detect(cv::Mat &image, cv::dnn::Net &net, std::vector<Detection> &output, c
 
 void send_data(int sockfd, std::string data) {
     if (send(sockfd, data.c_str(), data.length(), 0) < 0) {
-        std::cerr << "Error sending data" << std::endl;
+        std::cerr << "Connection closed" << std::endl;
         exit(1);
     }
 }
