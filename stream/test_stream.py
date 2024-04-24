@@ -22,16 +22,28 @@ def get_ip_addr():
 
 HOST = get_ip_addr()
 
+cap = cv2.VideoCapture("rtsp://192.168.0.101:8554/video_stream")  # Adjust the index or filename according to your source
+
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = cap.get(cv2.CAP_PROP_FPS)
+codec_fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
+
 # Input parameters
 input_params = {
     'f': 'rawvideo',
     'pix_fmt': 'bgr24',
-    's': '640x480',
+    's': '{}x{}'.format(640, 480),
+    'r': str(fps),
 }
 
-# Output parameters
+# FFmpeg output options
 output_params = {
-    "f": "rtsp",
+    'pix_fmt': 'yuvj422p',
+    's': '{}x{}'.format(frame_width, frame_height),
+    'r': str(fps),
+    'f': 'rtsp',
+    'vcodec': 'mjpeg',
 }
 
 # Input pipe
@@ -41,7 +53,6 @@ input_pipe = ffmpeg.input('pipe:', **input_params)
 output_stream = ffmpeg.output(input_pipe, f'rtsp://{HOST}:8554/stream', **output_params)
 
 # OpenCV video capture
-cap = cv2.VideoCapture("test.mp4")  # Adjust the index or filename according to your source
 
 # Run ffmpeg command
 process = ffmpeg.run_async(output_stream, overwrite_output=True, pipe_stdin=True)
