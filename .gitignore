@@ -1,3 +1,3 @@
-/obstacle_avoiding_car/.env
-/obstacle_avoiding_car/QLearning/__pycache__/*
+reseasrch_modules/obstacle_avoiding_car/.env
+reseasrch_modules/obstacle_avoiding_car/QLearning/__pycache__/*
 .vscode
