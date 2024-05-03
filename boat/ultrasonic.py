@@ -1,4 +1,3 @@
-import numpy as np
 import threading
 
 class UltrasonicThread(threading.Thread):
