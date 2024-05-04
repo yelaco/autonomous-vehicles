@@ -4,7 +4,7 @@ import pickle
 from boat import Airboat
 from ultrasonic import UltrasonicThread
 from pid import PIDController
-from network_utils import get_ip_addr, TcpConnThread
+from utils import get_ip_addr, TcpConnThread
 from obstacle_avoiding import greedy_policy, get_sensor_values
 from video_streamer import stream_webcam
 
