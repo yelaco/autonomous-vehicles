@@ -30,7 +30,7 @@ def tcp_client(server_address, port):
         # Function to send messages
         def send_message(message):
             client_socket.sendall(message.encode('utf-8'))
-            print(f"Sent message to server: {message}")
+            print(f"Sent message: {message}")
 
         # Function to close the client socket
         def close_socket():

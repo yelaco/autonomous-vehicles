@@ -4,6 +4,8 @@ from PIL import Image, ImageTk
 import cv2
 import ipaddress
 from base_station import BaseStation
+import logging
+import traceback
 
 def switch_bs_mode(*args):
 	mode = mode_var.get()
@@ -20,10 +22,23 @@ def on_connect():
 		ip_address = str(ipaddress.ip_address(ip_entry.get()))	
 		print(f"Valid ip address: {ip_address}")
 		bs.connect(ip_address)
-		show_mode_selection()
-		show_video_frame()
-	except Exception:
+		show_start_sreen(False)
+		show_boat_webcam(True)
+		show_mode_selection(True)
+	except Exception as e:
+		traceback.print_exc()
 		print("Couldn't init base station")
+
+def on_manual(event):
+	if bs.mode == 'manual':
+		if event.keysym == "Left":
+			bs.send_command("Manual: Left")
+		elif event.keysym == "Right":
+			bs.send_command("Manual: Right")
+		elif event.keysym == "Up":
+			bs.send_command("Manual: Forward")
+		elif event.keysym == "Down":
+			bs.send_command("Manual: Stop")
 
 # Init base station
 bs = BaseStation()
@@ -51,18 +66,34 @@ mode_var.trace_add('write', switch_bs_mode)
 mode_switch = ttk.Combobox(root, textvariable=mode_var, values=["Auto", "Manual"], state="readonly")
 mode_switch.pack(pady=5)
 
-def show_video_frame():
-	ip_label.pack_forget()  # Hide IP address input frame
-	video_label.pack()  # Show video frame and mode selection
-	show_mode_selection()  # Show mode selection widget
+root.bind("<Left>", on_manual)
+root.bind("<Right>", on_manual)
+root.bind("<Up>", on_manual)
+root.bind("<Down>", on_manual)
 
-def show_mode_selection():
-	mode_label.pack(pady=(20, 5))
-	mode_switch.pack(pady=5)
+def show_start_sreen(is_displayed=True):
+	if is_displayed:
+		ip_label.pack(pady=(10, 5))
+		ip_entry.pack(pady=5)
+		connect_button.pack(pady=5)
+	else:
+		ip_label.pack_forget()
+		ip_entry.pack_forget()
+		connect_button.pack_forget()
+ 
+def show_boat_webcam(is_displayed=True):
+	if is_displayed:
+		video_label.pack()  # Show video frame and mode selection
+	else:
+		video_label.pack_forget()
 
-def hide_mode_selection():
-	mode_label.pack_forget()
-	mode_switch.pack_forget()
+def show_mode_selection(is_displayed=True):
+	if is_displayed:
+		mode_label.pack(pady=(20, 5))
+		mode_switch.pack(pady=5)
+	else:
+		mode_label.pack_forget()
+		mode_switch.pack_forget()
 
 def show_frame():
 	ret, frame = bs.real_time_control()
@@ -74,6 +105,6 @@ def show_frame():
 		video_label.config(image=img)
 	video_label.after(50, show_frame)
 
-hide_mode_selection()
+show_mode_selection(False)
 show_frame()
 root.mainloop()

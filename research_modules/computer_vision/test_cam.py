@@ -3,7 +3,7 @@ import cv2
   
   
 # define a video capture object 
-vid = cv2.VideoCapture(0) 
+vid = cv2.VideoCapture('rtsp://127.0.0.1:8554/video_stream') 
   
 while(True): 
       

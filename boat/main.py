@@ -19,6 +19,8 @@ def manual(data):
 		usv.right()
 	elif 'Manual: Forward' in data:
 		usv.forward()
+	elif 'Manual: Stop' in data:
+		usv.stop()
 	else:
 		CONTROL_MODE = 2
 

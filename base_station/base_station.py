@@ -9,7 +9,8 @@ class BaseStation:
 	
 	def connect(self, host, port=65432):
 		self.send_command, self.close_connection = tcp_client(host, port)
-		self.vproc = VideoProcessor(self.host)
+		self.vproc = VideoProcessor(host)
+		self.connected = True
 	
 	def get_decision(bbox, width=640):
 		x, w = int(bbox[0]), int(bbox[2])
@@ -23,7 +24,7 @@ class BaseStation:
 		else:  
 			return "Tracking: Forward"
 	
-	def real_time_control(self, command='None'):
+	def real_time_control(self):
 		if self.connected:
 			frame = self.vproc.get_latest_frame()
 
@@ -34,14 +35,14 @@ class BaseStation:
 				else :
 					self.mode = 'detect'
 			elif self.mode == 'detect': 
-				detected, bbox = self.vproc.detect(frame)
+				detected, bbox = self.vproc.detect(frame, 'bottle')
 				if detected:	
 					self.vproc.tracker = self.vproc.init_tracker(frame, bbox)
 					self.mode = 'tracking'
 				else:
 					self.send_command('None')
 			elif self.mode == 'manual':
-				self.send_command(command)
+				pass
 
 			return True, frame
 		else:

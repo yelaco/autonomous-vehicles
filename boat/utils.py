@@ -6,7 +6,7 @@ import threading
 
 def get_ip_addr():
 	# Run ifconfig command to get network interface information
-	result = subprocess.run(['ifconfig', 'wlan0'], capture_output=True, text=True)
+	result = subprocess.run(['ifconfig', 'wlp0s20f3'], capture_output=True, text=True)
 
 	# Check if ifconfig command was successful
 	if result.returncode == 0:
