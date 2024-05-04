@@ -69,23 +69,25 @@ try:
 	tcp_conn_thread = TcpConnThread(HOST, PORT)
 	tcp_conn_thread.start()
 	
-	while tcp_conn_thread.connected:
-		# check for current control mode
-		if 'Manual mode' in tcp_conn_thread.data:
-			CONTROL_MODE = 1
-		elif 'Auto mode' in tcp_conn_thread.data:
-			CONTROL_MODE = 2
-		elif 'Shutdown mode' in tcp_conn_thread.data:
-			CONTROL_MODE = 0
+	while tcp_conn_thread.running:
+		if tcp_conn_thread.connected:
+			# check for current control mode
+			if 'Manual mode' in tcp_conn_thread.data:
+				CONTROL_MODE = 1
+			elif 'Auto mode' in tcp_conn_thread.data:
+				CONTROL_MODE = 2
+			elif 'Shutdown' in tcp_conn_thread.data:
+				break
+			else:
+				# take action based on control mode
+				if CONTROL_MODE == 1:
+					manual(tcp_conn_thread.data)
+				elif CONTROL_MODE == 2: 
+					auto(tcp_conn_thread.data)
 		else:
-			# take action based on control mode
-			if CONTROL_MODE == 1:
-				manual(tcp_conn_thread.data)
-			elif CONTROL_MODE == 2: 
-				auto(tcp_conn_thread.data)
-			else: break	
-
+			auto('')
 finally:
-	time.sleep(2)
+	print("Shutting down")
+	ultrasonic.running = False
 	usv.shutdown()
 	rtsp_stream.terminate()

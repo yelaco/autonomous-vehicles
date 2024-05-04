@@ -3,10 +3,11 @@ import subprocess
 import sys
 import re
 import threading
+import traceback
 
 def get_ip_addr():
 	# Run ifconfig command to get network interface information
-	result = subprocess.run(['ifconfig', 'wlp0s20f3'], capture_output=True, text=True)
+	result = subprocess.run(['ifconfig', 'wlan0'], capture_output=True, text=True)
 
 	# Check if ifconfig command was successful
 	if result.returncode == 0:
@@ -25,6 +26,7 @@ class TcpConnThread(threading.Thread):
 		self.port = port
 		self.data = 'None'
 		self.connected = False
+		self.running = True
 		super(TcpConnThread, self).__init__(name=name)
 		self.start()
 
@@ -38,18 +40,28 @@ class TcpConnThread(threading.Thread):
 			server_socket.listen()
 			print("Server is listening...")
 			
-			# Accept connection
-			conn, addr = server_socket.accept()
-			with conn:
-				self.connected = True
-				print('Connected by', addr)
-				
-				while connected:
-					# Receive data from the client
-					d = conn.recv(1024)
-					if not d:
-						break
-					
-					self.data = d.decode()
+			while self.running:
+				# Accept connection
+				conn, addr = server_socket.accept()
+				try:
+					with conn:
+						self.connected = True
+						print('Connected by', addr)
+						
+						while self.connected:
+							# Receive data from the client
+							d = conn.recv(1024)
+							if not d:
+								break
 							
-		connected = False
+							self.data = d.decode()
+
+							if self.data == "Disconnect":
+								self.connected = False
+							elif self.data == "Shutdown":
+								self.connected = False
+								self.running = False
+								break
+				except Exception:
+					traceback.print_exc()
+				self.connected = False

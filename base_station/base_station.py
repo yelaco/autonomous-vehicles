@@ -7,8 +7,8 @@ class BaseStation:
 		self.connected = False
 		self.mode = mode
 	
-	def connect(self, host, port=65432):
-		self.send_command, self.close_connection = tcp_client(host, port)
+	def connect(self, host, port=65432, in_msg_label='', out_msg_label=''):
+		self.send_command, self.close_connection = tcp_client(host, port, in_msg_label, out_msg_label)
 		self.vproc = VideoProcessor(host)
 		self.connected = True
 	
@@ -28,7 +28,7 @@ class BaseStation:
 		if self.connected:
 			frame = self.vproc.get_latest_frame()
 
-			if self.mode == 'tracking':
+			if self.mode == 'tracking':	
 				ok, bbox = self.vproc.tracking(frame)
 				if ok:
 					self.send_command(self.get_decision(bbox, frame.shape[1]))
@@ -40,7 +40,7 @@ class BaseStation:
 					self.vproc.tracker = self.vproc.init_tracker(frame, bbox)
 					self.mode = 'tracking'
 				else:
-					self.send_command('None')
+					self.send_command('Detecting')
 			elif self.mode == 'manual':
 				pass
 
@@ -49,4 +49,5 @@ class BaseStation:
 			return False, None 
 
 	def close(self):
+		self.vproc.close()
 		self.close_connection()

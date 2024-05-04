@@ -22,8 +22,8 @@ class CameraBufferCleanerThread(threading.Thread):
 
 class VideoProcessor:
 	def __init__(self, host):
-		#self.cap = cv2.VideoCapture(f"rtsp://{host}:8554/video_stream")
-		self.cap = cv2.VideoCapture(0)
+		self.cap = cv2.VideoCapture(f"rtsp://{host}:8554/video_stream")
+		# self.cap = cv2.VideoCapture(0)
 	
 		self.cam_cleaner = CameraBufferCleanerThread(self.cap)
 		self.net = cv2.dnn.readNetFromONNX("config/best1404.onnx")
@@ -118,6 +118,6 @@ class VideoProcessor:
 
 	def close(self):
 		self.cam_cleaner.running = False
-		time.sleep(2)
+		time.sleep(1)
 		self.cap.release()
 	

@@ -1,46 +1,48 @@
 import socket
 import threading
 
-def tcp_client(server_address, port):
-    # Create a TCP client socket
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def tcp_client(server_address, port, in_msg_label, out_msg_label):
+	# Create a TCP client socket
+	client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    try:
-        # Connect to the server
-        client_socket.connect((server_address, port))
-        print(f"Connected to server at {server_address}:{port}")
+	try:
+		# Connect to the server
+		client_socket.connect((server_address, port))
+		print(f"Connected to server at {server_address}:{port}")
 
-        # Function to handle receiving messages
-        def receive_messages():
-            while True:
-                try:
-                    data = client_socket.recv(1024)
-                    if not data:
-                        break
-                    message = data.decode('utf-8')
-                    print(f"Received message from server: {message}")
-                except ConnectionResetError:
-                    print("Connection reset by peer")
-                    break
+		# Function to handle receiving messages
+		def receive_messages():
+			while True:
+				try:
+					data = client_socket.recv(1024)
+					if not data:
+						break
+					message = data.decode('utf-8')
+					in_msg_label.config(text=f"Received: {message}")
+					print(f"Received message from server: {message}")
+				except ConnectionResetError:
+					print("Connection reset by peer")
+					break
 
-        # Start a separate thread to receive messages
-        receive_thread = threading.Thread(target=receive_messages)
-        receive_thread.start()
+		# Start a separate thread to receive messages
+		receive_thread = threading.Thread(target=receive_messages)
+		receive_thread.start()
 
-        # Function to send messages
-        def send_message(message):
-            client_socket.sendall(message.encode('utf-8'))
-            print(f"Sent message: {message}")
+		# Function to send messages
+		def send_message(message):
+			client_socket.sendall(message.encode('utf-8'))
+			out_msg_label.config(text=f"Sent: {message}")
+			print(f"Sent message: {message}")
 
-        # Function to close the client socket
-        def close_socket():
-            client_socket.close()
-            print("Socket closed")
+		# Function to close the client socket
+		def close_socket():
+			client_socket.close()
+			print("Socket closed")
 
-        # Return the send_message and close_socket functions for external use
-        return send_message, close_socket
+		# Return the send_message and close_socket functions for external use
+		return send_message, close_socket
 
-    except ConnectionRefusedError:
-        print(f"Connection to server at {server_address}:{port} refused")
-        # Close the socket if connection attempt fails
-        client_socket.close()
+	except ConnectionRefusedError:
+		print(f"Connection to server at {server_address}:{port} refused")
+		# Close the socket if connection attempt fails
+		client_socket.close()
