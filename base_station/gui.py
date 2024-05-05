@@ -20,12 +20,14 @@ def on_connect():
 	try:
 		ip_address = str(ipaddress.ip_address(ip_entry.get()))	
 		print(f"Valid ip address: {ip_address}")
-		bs.connect(host=ip_address, in_msg_label=in_msg_label, out_msg_label=out_msg_label)
+		bs.connect(host=ip_address, port=65432, in_msg_label=in_msg_label, out_msg_label=out_msg_label)
 		show_start_sreen(False)
 		show_work_screen()
+	except ValueError:
+		messagebox.showerror("Unable to connect", f"No server is listening at '{ip_entry.get()}'")
 	except Exception:
+		messagebox.showerror("Error", "Coulnd't init base station")
 		traceback.print_exc()
-		print("Couldn't init base station")
 
 def on_disconnect():
 	if messagebox.askokcancel("Disconnect", "Do you want to disconnect and close the application?"):
@@ -50,6 +52,16 @@ def on_shutdown():
 		bs.close()
 		root.destroy()
 
+def on_focus_in_ip_entry(event):
+    """Handle focus in event for the ip_entry widget."""
+    if event.widget.get() == "Boat's ip address":
+        event.widget.delete(0, tk.END)
+
+def on_focus_out_ip_entry(event):
+    """Handle focus out event for the ip_entry widget."""
+    if not event.widget.get():
+        event.widget.insert(0, "Boat's ip address")
+
 # Init base station
 bs = BaseStation()
 
@@ -62,7 +74,8 @@ canvas = tk.Canvas(root, width=640, height=600)
 work_frame = tk.Frame(root)
 
 # IP address input and Connect button
-ip_label = tk.Label(canvas, text="Enter Boat Ip:")
+welcome_label = tk.Label(canvas, text="Welcome on board, Captain Kurt!") 
+ip_label = tk.Label(canvas, text="Please enter boat's ip address to connect")
 ip_entry = tk.Entry(canvas)
 connect_button = tk.Button(canvas, text="Connect", command=on_connect)
 
@@ -72,9 +85,10 @@ bg_image = bg_image.resize((640, 600))
 bg_image = ImageTk.PhotoImage(bg_image)
 canvas.create_image(0, 0, anchor=tk.NW, image=bg_image)
 
-canvas.create_window(240, 80, anchor=tk.NW, window=ip_label)
-canvas.create_window(240, 110, anchor=tk.NW, window=ip_entry)
-canvas.create_window(240, 150, anchor=tk.NW, window=connect_button)
+canvas.create_window(210, 65, anchor=tk.NW, window=welcome_label)
+canvas.create_window(190, 115, anchor=tk.NW, window=ip_label)
+canvas.create_window(195, 155, anchor=tk.NW, window=ip_entry)
+canvas.create_window(372, 152, anchor=tk.NW, window=connect_button)
 
 # Create logo label
 logo_image = Image.open("config/logo_uet.png") 
@@ -106,6 +120,7 @@ root.bind("s", on_manual)
 def show_start_sreen(is_displayed=True):
 	if is_displayed:
 		canvas.pack(fill=tk.BOTH, expand=True)
+		canvas.focus_set()	
 	else:
 		canvas.pack_forget()
 
@@ -115,8 +130,8 @@ def show_work_screen(is_displayed=True):
 		show_boat_webcam()
 		show_mode_selection()
 		show_messages()
-		shutdown_button.grid(row=3, column=3, padx=10, pady=10, sticky=tk.SE)
-		disconnect_button.grid(row=3, column=2, pady=10, sticky=tk.SE)
+		shutdown_button.grid(row=3, column=3, padx=30, pady=10, sticky=tk.SW)
+		disconnect_button.grid(row=3, column=2,pady=10, sticky=tk.SE)
 		work_frame.pack(fill=tk.BOTH, expand=True)
 	else:
 		show_logo(False)
@@ -129,7 +144,7 @@ def show_work_screen(is_displayed=True):
   
 def show_logo(is_displayed=True):
 	if is_displayed:
-		logo_label.grid(row=1, column=0, rowspan=3, padx=5, pady=10, sticky=tk.W) 
+		logo_label.grid(row=1, column=0, rowspan=3, padx=5, pady=5, sticky=tk.W) 
 	else:
 		logo_label.grid_forget()
  

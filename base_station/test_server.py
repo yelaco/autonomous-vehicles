@@ -10,26 +10,34 @@ connected = True
 running = True 
 
 try:
-    mediamtx_pid = subprocess.check_output(["pidof", "mediamtx"]).decode().strip()
+	mediamtx_pid = subprocess.check_output(["pidof", "mediamtx"]).decode().strip()
 except:
-    sys.exit("RTSP server hasn't been started. Read HOW_TO_RUN.txt in /car folder")
+	sys.exit("RTSP server hasn't been started. Read HOW_TO_RUN.txt in /car folder")
 
 ffmpeg_command = [
-    "ffmpeg",
-    "-f", "v4l2",
-    "-framerate", "60",
-    "-re",
-    "-stream_loop", "-1",
-    "-video_size", "640x480",
-    "-input_format", "mjpeg",
-    "-i", "/dev/video0",
-    "-c", "copy",
-    "-f", "rtsp",
-    f"rtsp://{host}:8554/video_stream"
+	"ffmpeg",
+	"-f", "v4l2",
+	"-framerate", "60",
+	"-re",
+	"-stream_loop", "-1",
+	"-video_size", "640x480",
+	"-input_format", "mjpeg",
+	"-i", "/dev/video0",
+	"-c", "copy",
+	"-f", "rtsp",
+	f"rtsp://{host}:8554/video_stream"
 ]
 rtsp_stream = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 time.sleep(4)
 
+def send_data(data):
+	"""Send data back to the connected client."""
+	if connected:
+		try:
+			conn.sendall(data.encode())
+		except Exception as e:
+			print(f"Error sending data: {e}")
+				
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
 	# Bind the socket to the address and port
 	server_socket.bind((host, port))
@@ -38,10 +46,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
 	server_socket.listen()
 	print("Server is listening...")
 		
-	# Accept connection
-	conn, addr = server_socket.accept()
 	while running:
-		# Accept connection
 		conn, addr = server_socket.accept()
 		try:
 			with conn:
@@ -58,13 +63,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
 
 					print(data)
 
-					if data == "Disconnect":
+					if "Disconnect" in data:
 						connected = False
-					elif data == "Shutdown":
+					elif "Shutdown" in data:
 						connected = False
 						running = False
-						break
+
+					send_data("[100, 100, 100, 100, 100]")
 		except Exception:
 			traceback.print_exc()
 		connected = False
-							

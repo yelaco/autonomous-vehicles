@@ -29,6 +29,13 @@ class TcpConnThread(threading.Thread):
 		self.running = True
 		super(TcpConnThread, self).__init__(name=name)
 		self.start()
+	
+	def send_data(self, data):
+		if self.connected:
+			try:
+				self.conn.sendall(data.encode())
+			except Exception as e:
+				print(f"Error sending data: {e}")
 
 	def run(self):	
 		# Create a socket object
@@ -56,12 +63,11 @@ class TcpConnThread(threading.Thread):
 							
 							self.data = d.decode()
 
-							if self.data == "Disconnect":
+							if "Disconnect" in self.data:
 								self.connected = False
-							elif self.data == "Shutdown":
+							elif "Shutdown" in self.data:
 								self.connected = False
 								self.running = False
-								break
 				except Exception:
 					traceback.print_exc()
 				self.connected = False

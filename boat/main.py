@@ -26,7 +26,9 @@ def manual(data):
 
 def auto(data): 
     # action to avoid obstacle
-	oa_action = greedy_policy(Qtable_rlcar, get_sensor_values(ultrasonic.latest_measure))
+	distances = ultrasonic.latest_measure
+	tcp_conn_thread.send_data(f"{distances}")
+	oa_action = greedy_policy(Qtable_rlcar, get_sensor_values(distances))
 	if oa_action ==	0: 
      	# The vehicle keeps going straight as there is no osbstacle
 		# Now we can continue detect and track bottles
