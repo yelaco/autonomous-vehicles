@@ -1,7 +1,7 @@
 import socket
 import threading
 
-def tcp_client(server_address, port, in_msg_label, out_msg_label):
+def tcp_client(server_address, port, sys_info):
 	# Create a TCP client socket
 	client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -18,8 +18,13 @@ def tcp_client(server_address, port, in_msg_label, out_msg_label):
 					if not data:
 						break
 					message = data.decode('utf-8')
-					in_msg_label.config(text=f"Received: {message}")
-					print(f"Received message from server: {message}")
+					if "Vehicle" in message:
+						if "Boat" in message:
+							sys_info.vehicle_type = "Boat"
+						elif "Car" in message:
+							sys_info.vehicle_type = "Car"
+					sys_info.recv_msg = message
+					# print(f"Received message from server: {message}")
 				except ConnectionResetError:
 					print("Connection reset by peer")
 					break
@@ -31,8 +36,10 @@ def tcp_client(server_address, port, in_msg_label, out_msg_label):
 		# Function to send messages
 		def send_message(message):
 			client_socket.sendall(message.encode('utf-8'))
-			out_msg_label.config(text=f"Sent: {message}")
-			print(f"Sent message: {message}")
+			sys_info.sent_msg = message
+			# print(f"Sent message: {message}")
+  		
+		send_message("Which")
 
 		# Function to close the client socket
 		def close_socket():

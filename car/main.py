@@ -1,174 +1,99 @@
-import RPi.GPIO as GPIO
-from AlphaBot import AlphaBot
-import pickle
-import numpy as np
-import threading
-import socket
-import re
-import sys
-import subprocess
+import GPIO
 import time
+import pickle
+from car import Car
+from ultrasonic import UltrasonicThread
+from pid import PIDController
+from utils import get_ip_addr, TcpConnThread
+from obstacle_avoiding import greedy_policy, get_sensor_values
+from video_streamer import stream_webcam
 
-def get_ip_addr():
-    # Run ifconfig command to get network interface information
-    result = subprocess.run(['ifconfig', 'wlan0'], capture_output=True, text=True)
+def measure(): 
+	return -1
 
-    # Check if ifconfig command was successful
-    if result.returncode == 0:
-        # Use regular expression to find the IP address
-        ip_match = re.search(r'inet (\d+\.\d+\.\d+\.\d+)', result.stdout)
-        if ip_match:
-            return ip_match.group(1)
-        else:
-            sys.exit("IP address not found")
-    else:
-        sys.exit("Failed to run ifconfig command")
+def manual(data):
+	global CONTROL_MODE
+	if 'Manual: Left' in data:
+		car.left()
+	elif 'Manual: Right' in data:
+		car.right()
+	elif 'Manual: Forward' in data:
+		car.forward()
+	elif 'Manual: Stop' in data:
+		car.stop()
+	else:
+		CONTROL_MODE = 2
 
-def tcp_conn():
-    global data
-    global connected
-    # Create a socket object
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        # Bind the socket to the address and port
-        server_socket.bind((HOST, PORT))
-        
-        # Listen for incoming connections
-        server_socket.listen()
-        print("Server is listening...")
-        
-        # Accept connection
-        conn, addr = server_socket.accept()
-        with conn:
-            print('Connected by', addr)
-            
-            while connected:
-                # Receive data from the client
-                d = conn.recv(1024)
-                if not d:
-                    break
-                
-                data = d.decode()
-                if not ("None" in data or Ab.shutdown):
-                    if "Go straight" in data:
-                        Ab.forward()
-                        print("Received: Go straight")
-                    elif "Turn left" in data:
-                        Ab.left()
-                        print("Received: Turn left")
-                    elif "Turn right" in data:
-                        Ab.right()
-                        print("Received: Turn right")
-                    elif "Stop" in data:
-                        Ab.stop()
-                        print("Received: Stop")
-                        
-    connected = False
-            
-def greedy_policy(Qtable, state):
-    action = np.argmax(Qtable[tuple(state)])
-    return action
+def auto(data): 
+	# action to avoid obstacle
+	distances = ultrasonic.latest_measure
+	tcp_conn_thread.send_data(f"{distances}")
+	oa_action = greedy_policy(Qtable_rlcar, get_sensor_values(distances))
+	if 'Tracking' in data:
+			# measured_value = measure()
+			# usv.move(pid.update(measured_value))
+			# ==> Plan to use pid controller later
 
-def get_sensor_values(distances):
-    k1 = 2
-    k2 = 2
-    k3 = 3
-    k4 = 3
+			if distances[2] < 5:
+				car.stop()
+				tcp_conn_thread.running = False
+				tcp_conn_thread.connected = False
+				return
+			
+			# temporary using old method
+			if 'Tracking: Left' in data:
+				car.left()
+			elif 'Tracking: Right' in data:
+				car.right()
+			elif 'Tracking: Forward' in data:
+				car.forward()
+	else: 
+		if oa_action ==	0: 
+			car.forward()
+		elif oa_action == 1:
+			car.left()
+		elif oa_action == 2:
+			car.right()
+		else:
+			car.stop()	
 
-    # check the left side sensor
-    dist = min(distances[0:3])
-    if (dist > 40 and dist < 70):
-        k1 = 1  #zone 1
-    elif (dist <= 40):
-        k1 = 0  #zone 0
-
-    # check the right side sensor
-    dist = min(distances[2:])
-    if (dist > 40 and dist < 70):
-        k2 = 1  #zone 1
-    elif (dist <= 40):
-        k2 = 0  #zone 0
-
-    detected = [distance < 100 for distance in distances]
-    # the left sector of the vehicle
-    if detected[0] and detected[2]:
-        k3 = 0 # both subsectors have obstacles
-    elif (detected[1] or detected[2]) and not detected[0]:
-        k3 = 1 # inner left subsector
-    elif (detected[0] or detected[1]) and not detected[2]:
-        k3 = 2 # outter left subsector
-
-    # the right sector of the vehicle
-    if detected[2] and detected[4]:
-        k4 = 0 # both subsectors have obstacles
-    elif (detected[2] or detected[3]) and not detected[4]:
-        k4 = 1 # inner right subsector
-    elif (detected[3] or detected[4]) and not detected[2]:
-        k4 = 2 # outter right subsector 
-
-    return [k1, k2, k3, k4]
-
-Ab = AlphaBot()
-
+car = Car()
 HOST = get_ip_addr() 
 PORT = 65432
+rtsp_stream = stream_webcam(HOST)
 
-# Start the rtsp stream #
-try:
-    mediamtx_pid = subprocess.check_output(["pidof", "mediamtx"]).decode().strip()
-except:
-    sys.exit("RTSP server hasn't been started. Read HOW_TO_RUN.txt in /car folder")
+ultrasonic = UltrasonicThread(car)
+pid = PIDController(kp=0.5, ki=0.1, kd=0.2)
 
-ffmpeg_command = [
-    "ffmpeg",
-    "-f", "v4l2",
-    "-framerate", "60",
-    "-re",
-    "-stream_loop", "-1",
-    "-video_size", "640x480",
-    "-input_format", "mjpeg",
-    "-i", "/dev/video0",
-    "-c", "copy",
-    "-f", "rtsp",
-    f"rtsp://{HOST}:8554/video_stream"
-]
-rtsp_stream = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-time.sleep(4)
-#-----------------------#
+# Mode for controlling the boat
+CONTROL_MODE = 2 # 0: shutdown, 1: manual, 2: auto
 
-data = "None"
-connected = True
-
-with open('config_files/q_table.pkl', 'rb') as f:
-    Qtable_rlcar = pickle.load(f)
+with open('config/q_table.pkl', 'rb') as f:
+	Qtable_rlcar = pickle.load(f)
 
 try:
-    tcp_conn_thread = threading.Thread(target=tcp_conn)
-    tcp_conn_thread.start()
-    
-    while connected:
-        distances = [(int(dist) if dist < 100 else 100) if dist >= 0 else 0 for dist in Ab.SR04()]
-        if "None" in data:
-            print(distances, end=" ")
-            state = get_sensor_values(distances)
-
-            action = greedy_policy(Qtable_rlcar, state)
-            if action == 0:
-                print("Go straight")
-                Ab.forward()
-            elif action == 1:
-                print("Turn left")
-                Ab.left()
-            elif action == 2:
-                print("Turn right")
-                Ab.right()
-        else:
-            if distances[2] <= 3:
-                Ab.stop()
-                connected = False
-                Ab.shutdown = True
-                print(f"{distances} Stopped")
- 
+	tcp_conn_thread = TcpConnThread(HOST, PORT)
+	tcp_conn_thread.start()
+	
+	while tcp_conn_thread.running:
+		if tcp_conn_thread.connected:
+			# check for current control mode
+			if 'Manual mode' in tcp_conn_thread.data:
+				CONTROL_MODE = 1
+			elif 'Auto mode' in tcp_conn_thread.data:
+				CONTROL_MODE = 2
+			elif 'Shutdown' in tcp_conn_thread.data:
+				break
+			else:
+				# take action based on control mode
+				if CONTROL_MODE == 1:
+					manual(tcp_conn_thread.data)
+				elif CONTROL_MODE == 2: 
+					auto(tcp_conn_thread.data)
+		else:
+			auto('')
 finally:
-    time.sleep(2)
-    GPIO.cleanup()
-    rtsp_stream.terminate()
+	print("Shutting down")
+	ultrasonic.running = False
+	car.shutdown()
+	rtsp_stream.terminate()

@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 import cv2
+import json
 import ipaddress
 from base_station import BaseStation
 import traceback
@@ -20,7 +21,7 @@ def on_connect():
 	try:
 		ip_address = str(ipaddress.ip_address(ip_entry.get()))	
 		print(f"Valid ip address: {ip_address}")
-		bs.connect(host=ip_address, port=65432, in_msg_label=in_msg_label, out_msg_label=out_msg_label)
+		bs.connect(host=ip_address, port=65432)
 		show_start_sreen(False)
 		show_work_screen()
 	except ValueError:
@@ -53,21 +54,21 @@ def on_shutdown():
 		root.destroy()
 
 def on_focus_in_ip_entry(event):
-    """Handle focus in event for the ip_entry widget."""
-    if event.widget.get() == "Boat's ip address":
-        event.widget.delete(0, tk.END)
+	"""Handle focus in event for the ip_entry widget."""
+	if event.widget.get() == "Boat's ip address":
+		event.widget.delete(0, tk.END)
 
 def on_focus_out_ip_entry(event):
-    """Handle focus out event for the ip_entry widget."""
-    if not event.widget.get():
-        event.widget.insert(0, "Boat's ip address")
+	"""Handle focus out event for the ip_entry widget."""
+	if not event.widget.get():
+		event.widget.insert(0, "Boat's ip address")
 
 # Init base station
 bs = BaseStation()
 
 root = tk.Tk()
 root.title("Base Station v0.1")
-root.geometry("640x600")
+root.geometry("960x720")
 
 canvas = tk.Canvas(root, width=640, height=600)
 
@@ -92,7 +93,7 @@ canvas.create_window(372, 152, anchor=tk.NW, window=connect_button)
 
 # Create logo label
 logo_image = Image.open("config/logo_uet.png") 
-logo_image = logo_image.resize((100, 100))
+logo_image = logo_image.resize((130, 130))
 logo_image = ImageTk.PhotoImage(logo_image)
 logo_label = tk.Label(work_frame, image=logo_image)
 
@@ -104,13 +105,14 @@ video_label.grid(row=0, columnspan=3)
 mode_label = tk.Label(work_frame, text="Mode")
 mode_var = tk.StringVar(value="Auto")
 mode_var.trace_add('write', switch_bs_mode)
-mode_switch = ttk.Combobox(work_frame, textvariable=mode_var, values=["Auto", "Manual"], state="readonly")
+mode_switch = ttk.Combobox(work_frame, width=6, textvariable=mode_var, values=["Auto", "Manual"], state="readonly")
+mode_switch.update()
 
-out_msg_label = tk.Label(work_frame, text="Sent:")
-in_msg_label = tk.Label(work_frame, text="Received:")
-
-shutdown_button = tk.Button(work_frame, text="Shutdown", command=on_shutdown)
+shutdown_button = tk.Button(work_frame, text=" Shutdown ", command=on_shutdown)
 disconnect_button = tk.Button(work_frame, text="Disconnect", command=on_disconnect)
+
+side_canvas = tk.Canvas(work_frame, width=320, height=480)
+bottom_canvas = tk.Canvas(work_frame, width=640, height=240)
 
 root.bind("<Left>", on_manual)
 root.bind("<Right>", on_manual)
@@ -126,50 +128,53 @@ def show_start_sreen(is_displayed=True):
 
 def show_work_screen(is_displayed=True):
 	if is_displayed:
-		show_logo()
-		show_boat_webcam()
-		show_mode_selection()
-		show_messages()
-		shutdown_button.grid(row=3, column=3, padx=30, pady=10, sticky=tk.SW)
-		disconnect_button.grid(row=3, column=2,pady=10, sticky=tk.SE)
+		video_label.grid(row=0, column=0, rowspan=4, columnspan=4, sticky=tk.NW)
+		logo_label.grid(row=4, column=0, padx=5, pady=5, sticky=tk.NW)
+  
+		mode_label.grid(row=4, column=1, pady=10, sticky=tk.NW)
+		mode_switch.grid(row=4, column=1, pady=35, sticky=tk.NW)
+
+		disconnect_button.grid(row=5, column=0, padx=17, sticky=tk.NW)
+		shutdown_button.grid(row=5, column=0, padx=17, pady=30, sticky=tk.SW)
+  
+		side_canvas.grid(row=0, column=4, rowspan=4, columnspan=2, sticky=tk.NW)
+		bottom_canvas.grid(row=4, column=2, rowspan=2, columnspan=4, sticky=tk.NW)
 		work_frame.pack(fill=tk.BOTH, expand=True)
 	else:
-		show_logo(False)
-		show_boat_webcam(False)
-		show_mode_selection(False)
-		show_messages(False)
 		shutdown_button.grid_forget()
 		disconnect_button.grid_forget()
+		side_canvas.grid_forget()
 		work_frame.pack_forget()
-  
-def show_logo(is_displayed=True):
-	if is_displayed:
-		logo_label.grid(row=1, column=0, rowspan=3, padx=5, pady=5, sticky=tk.W) 
-	else:
-		logo_label.grid_forget()
+
+def show_info():
+	bottom_canvas.delete("all")
+	bottom_canvas.create_text(10, 22, text=f"{bs.sys_info.vehicle_type}", font=("Arial", 16, "bold"), anchor='w')
+	bottom_canvas.create_text(10, 50, text=f"Sent: {bs.sys_info.sent_msg}", anchor='w')
+	bottom_canvas.create_text(10, 70, text=f"Received: {bs.sys_info.recv_msg}", font=("Arial", 11), anchor='w')
+
+	work_frame.after(100, show_info)
+
+def show_sensors():
+	distances = bs.sys_info.recv_msg
+	try:
+		side_canvas.delete("all")
+		side_canvas.create_text(75, 355, text="Distances to obstacles", font=("Arial", 11, "bold"), anchor='w')
+
+		part_height = 100 / 5
+		for i, distance in enumerate(json.loads(distances)):
+			num_parts = min(int(distance // part_height), 4) + 1
+			color = "grey"
+			for j in range(5):
+				if j > num_parts - 1:
+					color = "white" 
+				y_start = 480 - (j + 1) * part_height
+				y_end = 480 - j * part_height
+				side_canvas.create_rectangle(i * 40 + 60, y_start, i * 40 + 90, y_end, fill=color)
+	except Exception:
+		pass
+
+	work_frame.after(100, show_sensors)
  
-def show_boat_webcam(is_displayed=True):
-	if is_displayed:
-		video_label.grid(row=0, column=0, columnspan=4)  # Show video frame and mode selection
-	else:
-		video_label.grid_forget()
-
-def show_mode_selection(is_displayed=True):
-	if is_displayed:
-		mode_label.grid(row=1, column=1, sticky=tk.SW)
-		mode_switch.grid(row=2, column=1, sticky=tk.NW)
-	else:
-		mode_label.grid_forget()
-		mode_switch.grid_forget()
-	
-def show_messages(is_displayed=True):
-	if is_displayed:
-		out_msg_label.grid(row=1, column=2, columnspan=2, sticky=tk.SW)
-		in_msg_label.grid(row=2, column=2, columnspan=2, sticky=tk.NW)
-	else:
-		in_msg_label.grid_forget()
-		out_msg_label.grid_forget()
-
 def show_frame():
 	ret, frame = bs.real_time_control()
 	if ret:
@@ -178,9 +183,11 @@ def show_frame():
 		img = ImageTk.PhotoImage(image=img)
 		video_label.img = img
 		video_label.config(image=img)
-	video_label.after(50, show_frame)
+	video_label.after(20, show_frame)
 
 show_start_sreen()
 show_work_screen(False)
+show_info()
+show_sensors()
 show_frame()
 root.mainloop()

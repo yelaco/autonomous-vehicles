@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'CSRT', 'MOSSE']
-tracker_type = tracker_types[5]
+tracker_type = tracker_types[2]
 (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
 print(cv2.__version__)
 
@@ -26,8 +26,8 @@ class VideoProcessor:
 		# self.cap = cv2.VideoCapture(0)
 	
 		self.cam_cleaner = CameraBufferCleanerThread(self.cap)
-		self.net = cv2.dnn.readNetFromONNX("config/best1404.onnx")
-		file = open("config/classes.txt","r")
+		self.net = cv2.dnn.readNetFromONNX("config/yolov5s.onnx")
+		file = open("config/coco.txt","r")
 		self.classes = file.read().split('\n')
 	
 	def get_latest_frame(self):
