@@ -53,16 +53,6 @@ def on_shutdown():
 		bs.close()
 		root.destroy()
 
-def on_focus_in_ip_entry(event):
-	"""Handle focus in event for the ip_entry widget."""
-	if event.widget.get() == "Boat's ip address":
-		event.widget.delete(0, tk.END)
-
-def on_focus_out_ip_entry(event):
-	"""Handle focus out event for the ip_entry widget."""
-	if not event.widget.get():
-		event.widget.insert(0, "Boat's ip address")
-
 # Init base station
 bs = BaseStation()
 
@@ -70,26 +60,26 @@ root = tk.Tk()
 root.title("Base Station v0.1")
 root.geometry("960x720")
 
-canvas = tk.Canvas(root, width=640, height=600)
+canvas = tk.Canvas(root, width=960, height=720)
 
 work_frame = tk.Frame(root)
 
 # IP address input and Connect button
 welcome_label = tk.Label(canvas, text="Welcome on board, Captain Kurt!") 
-ip_label = tk.Label(canvas, text="Please enter boat's ip address to connect")
+ip_label = tk.Label(canvas, text="Please enter vehicle's ip address to connect")
 ip_entry = tk.Entry(canvas)
 connect_button = tk.Button(canvas, text="Connect", command=on_connect)
 
 # Create wallpaper label
-bg_image = Image.open("config/wallpaper.png") 
-bg_image = bg_image.resize((640, 600))
+bg_image = Image.open("config/wallpaper.jpg") 
+bg_image = bg_image.resize((960, 720))
 bg_image = ImageTk.PhotoImage(bg_image)
 canvas.create_image(0, 0, anchor=tk.NW, image=bg_image)
 
-canvas.create_window(210, 65, anchor=tk.NW, window=welcome_label)
-canvas.create_window(190, 115, anchor=tk.NW, window=ip_label)
-canvas.create_window(195, 155, anchor=tk.NW, window=ip_entry)
-canvas.create_window(372, 152, anchor=tk.NW, window=connect_button)
+canvas.create_window(365, 95, anchor=tk.NW, window=welcome_label)
+canvas.create_window(340, 145, anchor=tk.NW, window=ip_label)
+canvas.create_window(345, 185, anchor=tk.NW, window=ip_entry)
+canvas.create_window(522, 182, anchor=tk.NW, window=connect_button)
 
 # Create logo label
 logo_image = Image.open("config/logo_uet.png") 
