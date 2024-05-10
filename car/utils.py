@@ -63,8 +63,8 @@ class TcpConnThread(threading.Thread):
                             
                             self.data = d.decode()
 
-                            if "Which" in data:
-                                self.send_data("Vehicle: Boat")
+                            if "Which" in self.data:
+                                self.send_data("Vehicle: Car")
 
                             if "Disconnect" in self.data:
                                 self.connected = False
