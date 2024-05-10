@@ -8,50 +8,50 @@ from base_station import BaseStation
 import traceback
 
 def switch_bs_mode(*args):
-	mode = mode_var.get()
-	if mode == "Auto":	
-		bs.mode = 'detect' 
-		bs.send_command("Auto mode")
-	elif mode == "Manual":
-		bs.mode = 'manual'
-		bs.send_command("Manual mode")
+    mode = mode_var.get()
+    if mode == "Auto":	
+        bs.mode = 'detect' 
+        bs.send_command("Auto mode")
+    elif mode == "Manual":
+        bs.mode = 'manual'
+        bs.send_command("Manual mode")
 
 def on_connect():
-	global bs
-	try:
-		ip_address = str(ipaddress.ip_address(ip_entry.get()))	
-		print(f"Valid ip address: {ip_address}")
-		bs.connect(host=ip_address, port=65432)
-		show_start_sreen(False)
-		show_work_screen()
-	except ValueError:
-		messagebox.showerror("Unable to connect", f"No server is listening at '{ip_entry.get()}'")
-	except Exception:
-		messagebox.showerror("Error", "Coulnd't init base station")
-		traceback.print_exc()
+    global bs
+    try:
+        ip_address = str(ipaddress.ip_address(ip_entry.get()))	
+        print(f"Valid ip address: {ip_address}")
+        bs.connect(host=ip_address, port=65432)
+        show_start_sreen(False)
+        show_work_screen()
+    except ValueError:
+        messagebox.showerror("Unable to connect", f"No server is listening at '{ip_entry.get()}'")
+    except Exception:
+        messagebox.showerror("Error", "Coulnd't init base station")
+        traceback.print_exc()
 
 def on_disconnect():
-	if messagebox.askokcancel("Disconnect", "Do you want to disconnect and close the application?"):
-		bs.send_command("Disconnect")
-		bs.close()
-		root.destroy()
+    if messagebox.askokcancel("Disconnect", "Do you want to disconnect and close the application?"):
+        bs.send_command("Disconnect")
+        bs.close()
+        root.destroy()
 
 def on_manual(event):
-	if bs.mode == 'manual':
-		if event.keysym == "Left":
-			bs.send_command("Manual: Left")
-		elif event.keysym == "Right":
-			bs.send_command("Manual: Right")
-		elif event.keysym == "Up":
-			bs.send_command("Manual: Forward")
-		elif event.keysym == 's':
-			bs.send_command("Manual: Stop")
+    if bs.mode == 'manual':
+        if event.keysym == "Left":
+            bs.send_command("Manual: Left")
+        elif event.keysym == "Right":
+            bs.send_command("Manual: Right")
+        elif event.keysym == "Up":
+            bs.send_command("Manual: Forward")
+        elif event.keysym == 's':
+            bs.send_command("Manual: Stop")
 
 def on_shutdown():
-	if messagebox.askokcancel("Shutdown", "Do you want to shutdown the boat and close the application?"):
-		bs.send_command("Shutdown")
-		bs.close()
-		root.destroy()
+    if messagebox.askokcancel("Shutdown", "Do you want to shutdown the boat and close the application?"):
+        bs.send_command("Shutdown")
+        bs.close()
+        root.destroy()
 
 # Init base station
 bs = BaseStation()
@@ -110,70 +110,70 @@ root.bind("<Up>", on_manual)
 root.bind("s", on_manual)
 
 def show_start_sreen(is_displayed=True):
-	if is_displayed:
-		canvas.pack(fill=tk.BOTH, expand=True)
-		canvas.focus_set()	
-	else:
-		canvas.pack_forget()
+    if is_displayed:
+        canvas.pack(fill=tk.BOTH, expand=True)
+        canvas.focus_set()	
+    else:
+        canvas.pack_forget()
 
 def show_work_screen(is_displayed=True):
-	if is_displayed:
-		video_label.grid(row=0, column=0, rowspan=4, columnspan=4, sticky=tk.NW)
-		logo_label.grid(row=4, column=0, padx=5, pady=5, sticky=tk.NW)
+    if is_displayed:
+        video_label.grid(row=0, column=0, rowspan=4, columnspan=4, sticky=tk.NW)
+        logo_label.grid(row=4, column=0, padx=5, pady=5, sticky=tk.NW)
   
-		mode_label.grid(row=4, column=1, pady=10, sticky=tk.NW)
-		mode_switch.grid(row=4, column=1, pady=35, sticky=tk.NW)
+        mode_label.grid(row=4, column=1, pady=10, sticky=tk.NW)
+        mode_switch.grid(row=4, column=1, pady=35, sticky=tk.NW)
 
-		disconnect_button.grid(row=5, column=0, padx=17, sticky=tk.NW)
-		shutdown_button.grid(row=5, column=0, padx=17, pady=30, sticky=tk.SW)
+        disconnect_button.grid(row=5, column=0, padx=17, sticky=tk.NW)
+        shutdown_button.grid(row=5, column=0, padx=17, pady=30, sticky=tk.SW)
   
-		side_canvas.grid(row=0, column=4, rowspan=4, columnspan=2, sticky=tk.NW)
-		bottom_canvas.grid(row=4, column=2, rowspan=2, columnspan=4, sticky=tk.NW)
-		work_frame.pack(fill=tk.BOTH, expand=True)
-	else:
-		shutdown_button.grid_forget()
-		disconnect_button.grid_forget()
-		side_canvas.grid_forget()
-		work_frame.pack_forget()
+        side_canvas.grid(row=0, column=4, rowspan=4, columnspan=2, sticky=tk.NW)
+        bottom_canvas.grid(row=4, column=2, rowspan=2, columnspan=4, sticky=tk.NW)
+        work_frame.pack(fill=tk.BOTH, expand=True)
+    else:
+        shutdown_button.grid_forget()
+        disconnect_button.grid_forget()
+        side_canvas.grid_forget()
+        work_frame.pack_forget()
 
 def show_info():
-	bottom_canvas.delete("all")
-	bottom_canvas.create_text(10, 22, text=f"{bs.sys_info.vehicle_type}", font=("Arial", 16, "bold"), anchor='w')
-	bottom_canvas.create_text(10, 50, text=f"Sent: {bs.sys_info.sent_msg}", anchor='w')
-	bottom_canvas.create_text(10, 70, text=f"Received: {bs.sys_info.recv_msg}", font=("Arial", 11), anchor='w')
+    bottom_canvas.delete("all")
+    bottom_canvas.create_text(10, 22, text=f"{bs.sys_info.vehicle_type}", font=("Arial", 16, "bold"), anchor='w')
+    bottom_canvas.create_text(10, 50, text=f"Sent: {bs.sys_info.sent_msg}", anchor='w')
+    bottom_canvas.create_text(10, 70, text=f"Received: {bs.sys_info.recv_msg}", font=("Arial", 11), anchor='w')
 
-	work_frame.after(100, show_info)
+    work_frame.after(100, show_info)
 
 def show_sensors():
-	distances = bs.sys_info.recv_msg
-	try:
-		side_canvas.delete("all")
-		side_canvas.create_text(75, 355, text="Distances to obstacles", font=("Arial", 11, "bold"), anchor='w')
+    distances = bs.sys_info.recv_msg
+    try:
+        side_canvas.delete("all")
+        side_canvas.create_text(75, 355, text="Distances to obstacles", font=("Arial", 11, "bold"), anchor='w')
 
-		part_height = 100 / 5
-		for i, distance in enumerate(json.loads(distances)):
-			num_parts = min(int(distance // part_height), 4) + 1
-			color = "grey"
-			for j in range(5):
-				if j > num_parts - 1:
-					color = "white" 
-				y_start = 480 - (j + 1) * part_height
-				y_end = 480 - j * part_height
-				side_canvas.create_rectangle(i * 40 + 60, y_start, i * 40 + 90, y_end, fill=color)
-	except Exception:
-		pass
+        part_height = 100 / 5
+        for i, distance in enumerate(json.loads(distances)):
+            num_parts = min(int(distance // part_height), 4) + 1
+            color = "grey"
+            for j in range(5):
+                if j > num_parts - 1:
+                    color = "white" 
+                y_start = 480 - (j + 1) * part_height
+                y_end = 480 - j * part_height
+                side_canvas.create_rectangle(i * 40 + 60, y_start, i * 40 + 90, y_end, fill=color)
+    except Exception:
+        pass
 
-	work_frame.after(100, show_sensors)
+    work_frame.after(100, show_sensors)
  
 def show_frame():
-	ret, frame = bs.real_time_control()
-	if ret:
-		frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-		img = Image.fromarray(frame)
-		img = ImageTk.PhotoImage(image=img)
-		video_label.img = img
-		video_label.config(image=img)
-	video_label.after(20, show_frame)
+    ret, frame = bs.real_time_control()
+    if ret:
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(frame)
+        img = ImageTk.PhotoImage(image=img)
+        video_label.img = img
+        video_label.config(image=img)
+    video_label.after(20, show_frame)
 
 show_start_sreen()
 show_work_screen(False)
