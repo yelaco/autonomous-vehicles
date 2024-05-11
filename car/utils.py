@@ -37,8 +37,6 @@ class TcpConnThread(threading.Thread):
                 self.conn.sendall(data.encode())
             except Exception as e:
                 print(f"Error sending data: {e}")
-        else:
-            print("Error sending data: Connection closed")
 
     def run(self):	
         # Create a socket object

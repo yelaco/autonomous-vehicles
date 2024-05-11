@@ -27,11 +27,12 @@ class TcpConnThread(threading.Thread):
         self.data = 'None'
         self.connected = False
         self.running = True
+        self.conn = None
         super(TcpConnThread, self).__init__(name=name)
         self.start()
     
     def send_data(self, data):
-        if self.connected:
+        if self.connected and self.conn:
             try:
                 self.conn.sendall(data.encode())
             except Exception as e:
@@ -49,15 +50,15 @@ class TcpConnThread(threading.Thread):
             
             while self.running:
                 # Accept connection
-                conn, addr = server_socket.accept()
+                self.conn, addr = server_socket.accept()
                 try:
-                    with conn:
+                    with self.conn:
                         self.connected = True
                         print('Connected by', addr)
                         
                         while self.connected:
                             # Receive data from the client
-                            d = conn.recv(1024)
+                            d = self.conn.recv(1024)
                             if not d:
                                 break
                             
@@ -73,4 +74,5 @@ class TcpConnThread(threading.Thread):
                                 self.running = False
                 except Exception:
                     traceback.print_exc()
+                self.conn = None
                 self.connected = False
