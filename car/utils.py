@@ -27,15 +27,18 @@ class TcpConnThread(threading.Thread):
         self.data = 'None'
         self.connected = False
         self.running = True
+        seld.conn = None
         super(TcpConnThread, self).__init__(name=name)
         self.start()
     
     def send_data(self, data):
-        if self.connected:
+        if self.connected and self.conn:
             try:
                 self.conn.sendall(data.encode())
             except Exception as e:
                 print(f"Error sending data: {e}")
+        else:
+            print("Error sending data: Connection closed")
 
     def run(self):	
         # Create a socket object
@@ -73,4 +76,5 @@ class TcpConnThread(threading.Thread):
                                 self.running = False
                 except Exception:
                     traceback.print_exc()
+                self.conn = None
                 self.connected = False
