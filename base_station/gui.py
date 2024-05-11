@@ -173,7 +173,7 @@ def show_frame():
         img = ImageTk.PhotoImage(image=img)
         video_label.img = img
         video_label.config(image=img)
-    video_label.after(20, show_frame)
+    video_label.after(5, show_frame)
 
 show_start_sreen()
 show_work_screen(False)
