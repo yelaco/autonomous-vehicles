@@ -26,8 +26,8 @@ class VideoProcessor:
         # self.cap = cv2.VideoCapture(0)
     
         self.cam_cleaner = CameraBufferCleanerThread(self.cap)
-        self.net = cv2.dnn.readNetFromONNX("config/yolov5s.onnx")
-        file = open("config/coco.txt","r")
+        self.net = cv2.dnn.readNetFromONNX("config/best1404.onnx")
+        file = open("config/classes.txt","r")
         self.classes = file.read().split('\n')
     
     def get_latest_frame(self):

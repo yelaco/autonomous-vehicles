@@ -25,8 +25,8 @@ def manual(data):
 
 def auto(data): 
     # action to avoid obstacle
-    distances = ultrasonic.latest_measure
-    tcp_conn_thread.send_data(f"{distances}")
+    distances = ultrasonic.measure_distances()
+    tcp_conn_thread.send_data(f"{distances};")
     oa_action = greedy_policy(Qtable_rlcar, get_sensor_values(distances))
     if 'Tracking' in data:
             # measured_value = measure()

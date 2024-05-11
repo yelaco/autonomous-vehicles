@@ -27,7 +27,7 @@ class TcpConnThread(threading.Thread):
         self.data = 'None'
         self.connected = False
         self.running = True
-        seld.conn = None
+        self.conn = None
         super(TcpConnThread, self).__init__(name=name)
         self.start()
     
