@@ -72,7 +72,6 @@ with open('config/q_table.pkl', 'rb') as f:
 
 try:
     tcp_conn_thread = TcpConnThread(HOST, PORT)
-    tcp_conn_thread.start()
     
     while tcp_conn_thread.running:
         if tcp_conn_thread.connected:
