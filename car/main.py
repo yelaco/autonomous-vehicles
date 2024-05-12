@@ -1,4 +1,4 @@
-import GPIO
+import RPi.GPIO as GPIO
 import pickle
 import threading
 import traceback

@@ -26,8 +26,8 @@ def on_connect():
         show_work_screen()
     except ValueError:
         messagebox.showerror("Unable to connect", f"No server is listening at '{ip_entry.get()}'")
-    except Exception:
-        messagebox.showerror("Error", "Coulnd't init base station")
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
         traceback.print_exc()
 
 def on_disconnect():
@@ -129,7 +129,11 @@ def show_work_screen(is_displayed=True):
   
         side_canvas.grid(row=0, column=4, rowspan=4, columnspan=2, sticky=tk.NW)
         bottom_canvas.grid(row=4, column=2, rowspan=2, columnspan=4, sticky=tk.NW)
+        
         work_frame.pack(fill=tk.BOTH, expand=True)
+        show_info()
+        show_sensors()
+        show_frame()
     else:
         shutdown_button.grid_forget()
         disconnect_button.grid_forget()
@@ -145,13 +149,14 @@ def show_info():
     work_frame.after(100, show_info)
 
 def show_sensors():
-    distances = bs.sys_info.recv_msg
+    part_height = 100 / 5
     try:
         side_canvas.delete("all")
         side_canvas.create_text(75, 355, text="Distances to obstacles", font=("Arial", 11, "bold"), anchor='w')
 
-        part_height = 100 / 5
-        for i, distance in enumerate(json.loads(distances)):
+        distances = json.loads(bs.sys_info.recv_msg)
+
+        for i, distance in enumerate(distances):
             num_parts = min(int(distance // part_height), 4) + 1
             color = "grey"
             for j in range(5):
@@ -160,8 +165,14 @@ def show_sensors():
                 y_start = 480 - (j + 1) * part_height
                 y_end = 480 - j * part_height
                 side_canvas.create_rectangle(i * 40 + 60, y_start, i * 40 + 90, y_end, fill=color)
+
     except Exception:
-        pass
+        color = "white"
+        for i in range(5):
+            for j in range(5):
+                y_start = 480 - (j + 1) * part_height
+                y_end = 480 - j * part_height
+                side_canvas.create_rectangle(i * 40 + 60, y_start, i * 40 + 90, y_end, fill=color)
 
     work_frame.after(10, show_sensors)
  
@@ -173,11 +184,14 @@ def show_frame():
         img = ImageTk.PhotoImage(image=img)
         video_label.img = img
         video_label.config(image=img)
+    else:
+        img = Image.open('config/video_404.png') 
+        img = ImageTk.PhotoImage(image=img)
+        video_label.img = img
+        video_label.config(image=img)
     video_label.after(5, show_frame)
 
 show_start_sreen()
 show_work_screen(False)
-show_info()
-show_sensors()
-show_frame()
+
 root.mainloop()

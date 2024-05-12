@@ -34,7 +34,7 @@ class BaseStation:
             return "Tracking: Forward"
     
     def real_time_control(self):
-        if self.connected:
+        if self.connected and self.vproc.cam_cleaner.running:
             try:
                 frame = self.vproc.get_latest_frame()
 
@@ -55,6 +55,7 @@ class BaseStation:
                     pass
             except Exception:
                 traceback.print_exc()
+                return False, None
 
             return True, frame
         else:

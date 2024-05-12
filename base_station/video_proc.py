@@ -18,13 +18,14 @@ class CameraBufferCleanerThread(threading.Thread):
 
     def run(self):
         while self.running:
-            _, self.last_frame = self.camera.read()
+            ret, self.last_frame = self.camera.read()
+            if not ret:
+                self.running = False
+                raise Exception("Coulnd't capture video")
 
 class VideoProcessor:
     def __init__(self, host):
         self.cap = cv2.VideoCapture(f"rtsp://{host}:8554/video_stream")
-        # self.cap = cv2.VideoCapture(0)
-    
         self.cam_cleaner = CameraBufferCleanerThread(self.cap)
         self.net = cv2.dnn.readNetFromONNX("config/boat_best.onnx")
         file = open("config/boat.txt","r")
