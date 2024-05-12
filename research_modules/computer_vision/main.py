@@ -45,10 +45,9 @@ class CameraBufferCleanerThread(threading.Thread):
 cap = cv2.VideoCapture(0)
 cam_cleaner = CameraBufferCleanerThread(cap)
 
-net = cv2.dnn.readNetFromONNX("yolov5s.onnx")
-file = open("coco.txt","r")
-classes = file.read().split('\n')
-print(classes)
+net = cv2.dnn.readNetFromONNX("boat_best.onnx")
+file = open("boat.txt","r")
+classes = ['bottle']
 # classes = ['parking', 'obstacle']
 
 bbox = None
@@ -128,7 +127,8 @@ while True:
 			parking_id = -1
 			max_conf = -1
 			for i in num_retained_boxes:
-				if classes[classes_ids[i]] == 'person' and max_conf < confidences[i]:
+				if classes[classes_ids[i]] == 'bottle' and max_conf < confidences[i]:
+					print("HREE")
 					parking_id = i
 					max_conf = confidences[i]
 					

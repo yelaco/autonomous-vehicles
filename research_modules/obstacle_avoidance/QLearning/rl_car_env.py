@@ -3,8 +3,6 @@ from gym import spaces
 import numpy as np
 import math
 import pygame
-import sys
-import os
 import math
 import random
 
@@ -67,6 +65,12 @@ class Car(pygame.sprite.Sprite):
             if intersection:
                 self.collided = True
 
+        for mov in moving_obstacles:
+            intersection = self.get_circle_circle_intersection(self.rect.center, CAR_RADIUS, mov.rect.center, mov.radius)
+            if intersection and self.check_other_moving_cars([mov]):
+                self.collided = True
+            
+
         for wall in CIRCULAR_WALLS:
             intersection = self.get_circle_circle_intersection(self.rect.center, CAR_RADIUS, wall[:2], wall[2])
             if intersection:
@@ -113,11 +117,49 @@ class Car(pygame.sprite.Sprite):
 
         return intersection1, intersection2
 
+    def check_other_moving_cars(self, other_cars):
+        """
+        Check if the current car can "see" another car within its line of sight.
+        
+        Parameters:
+        other_car (Car): The other Car object to check against.
+
+        Returns:
+        bool: True if the other car is visible within the current car's line of sight, False otherwise.
+        """
+        # Calculate vector from current car to other car
+        for other_car in other_cars:
+            dx = other_car.rect.centerx - self.rect.centerx
+            dy = other_car.rect.centery - self.rect.centery
+
+            # Calculate angle between current car's heading direction and vector to other car
+            angle_to_other_car = math.degrees(math.atan2(-dy, dx))  # Angle in degrees (0 to 360)
+
+            # Normalize angles to be within 0 to 360 degrees
+            angle_diff = (angle_to_other_car - self.angle) % 360
+            if angle_diff > 180:
+                angle_diff -= 360
+
+            # Define line of sight threshold (adjust as needed)
+            line_of_sight_angle = 100  # Angle in degrees within which another car is considered visible
+
+            # Check if the other car is within the line of sight angle
+            if abs(angle_diff) <= line_of_sight_angle / 2:
+                # Now check if the other car is within the distance threshold (adjust as needed)
+                distance_threshold = SENSOR_LENGTH  # Use your sensor length or visibility range
+                distance_squared = dx**2 + dy**2
+
+                if distance_squared <= distance_threshold**2:
+                    return True
+
+        return False
+
     def get_sensor_values(self):
         k1 = 2
         k2 = 2
         k3 = 3
         k4 = 3
+        k5 = 1
 
         distances = [sensor.distance for sensor in self.sensors]
 
@@ -155,7 +197,10 @@ class Car(pygame.sprite.Sprite):
         elif (detected[3] or detected[4]) and not detected[2]:
             k4 = 2 # outter right subsector 
 
-        return [k1, k2, k3, k4] 
+        if self.check_other_moving_cars(moving_obstacles):
+            k5 = 0
+
+        return [k1, k2, k3, k4, k5] 
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
@@ -191,6 +236,18 @@ class Sensor(pygame.sprite.Sprite):
         closest_distance = SENSOR_LENGTH
 
         for obstacle in obstacles:
+            intersection = self.get_line_circle_intersection(self.start_pos, self.end_pos, obstacle.rect.center, obstacle.radius)
+            if intersection:
+                # Choose the intersection point closer to the sensor
+                distance1 = math.dist(self.start_pos, intersection[0]) - CAR_RADIUS
+                distance2 = math.dist(self.start_pos, intersection[1]) - CAR_RADIUS
+                distance = min(distance1, distance2)
+
+                if distance < closest_distance:
+                    closest_distance = min(distance, SENSOR_LENGTH)  # Cap distance at sensor length
+                    closest_obstacle = obstacle
+        
+        for obstacle in moving_obstacles:
             intersection = self.get_line_circle_intersection(self.start_pos, self.end_pos, obstacle.rect.center, obstacle.radius)
             if intersection:
                 # Choose the intersection point closer to the sensor
@@ -351,21 +408,38 @@ def create_obstacles(num_obstacles, map='none'):
     elif map == 'dynamic':
         obstacles.add(MovingObstacle(OBS_RADIUS - 5, 50, 0.5, clockwise=False))
         obstacles.add(MovingObstacle(OBS_RADIUS - 5, 150, 0.5))
+    elif map == 'static_dynamic':
+        x = 160
+        moving_obstacles = pygame.sprite.Group()
+        obstacles.add(Obstacle(WIDTH // 2, 0, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(WIDTH // 2, HEIGHT, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(0, HEIGHT // 2, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(WIDTH, HEIGHT // 2, OBS_RADIUS + 10))
+        obstacles.add(Obstacle(x, x, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(HEIGHT - x, HEIGHT - x, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(x, HEIGHT - x, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(HEIGHT - x, x, OBS_RADIUS + 5))
+        obstacles.add(Obstacle(WIDTH // 2, HEIGHT // 2, OBS_RADIUS))
+        mov_1 = MovingObstacle(OBS_RADIUS - 5, 75, 0.5, clockwise=False)
+        mov_2 = MovingObstacle(OBS_RADIUS - 5, 175, 0.5)
+        moving_obstacles.add(mov_1)
+        moving_obstacles.add(mov_2)
+        return obstacles, moving_obstacles
     else:
         pass
     return obstacles
 
 # Create sprites
 all_sprites = pygame.sprite.Group()
-car = Car(x=WIDTH // 2 - 150, y=HEIGHT // 2, angle=0)
+car = Car(x=WIDTH // 2 - 120, y=HEIGHT // 2, angle=0)
 
 # Initialize circular walls
 CIRCULAR_WALLS = [(WIDTH // 2, HEIGHT // 2, CIRCLE_BORDER_RADIUS)]
 WALLS = CIRCULAR_WALLS  # Use this for collision detection
 
 # Initialize sprites outside the game loop
-obstacles = create_obstacles(NUM_OBSTACLE, map='static_fixed')  # Initial number of obstacles
-all_sprites.add(car, *obstacles)
+obstacles, moving_obstacles = create_obstacles(NUM_OBSTACLE, map='static_dynamic')  # Initial number of obstacles
+all_sprites.add(car, *obstacles, *moving_obstacles)
 
 class RlCarEnv(gym.Env):
     def __init__(self):
@@ -374,9 +448,9 @@ class RlCarEnv(gym.Env):
         # Action |  Straight | Left | Right
         # ==> 3 actions discrete actions
         self.action_space = spaces.Discrete(3)
-        self.state_space = [3, 3, 4, 4]
-        low = [0, 0, 0, 0]
-        high = [2, 2, 3, 3]
+        self.state_space = [3, 3, 4, 4, 2]
+        low = [0, 0, 0, 0, 0]
+        high = [2, 2, 3, 3, 1]
         self.observation_space = spaces.Box(low=np.array(low), high=np.array(high), dtype=np.uint8)
         
         # Initialize Pygame

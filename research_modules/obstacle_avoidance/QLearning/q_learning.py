@@ -119,14 +119,14 @@ def train(n_training_episodes, min_epsilon, max_epsilon, learning_rate, gamma, d
         
         episode_rewards.append(total_rewards_ep)
         
-        if (episode + 1) % 5 == 0:
-            mean_evaluate, _ = evaluate_agent(env, max_steps, 3, Qtable, in_train=True)
-            mean_episode_rewards.append(np.mean(episode_rewards)) 
-            mean_eval_rewards.append(mean_evaluate)
-            episode_rewards = []
-            env.change_map('static_fixed')
-            eval_graph(mean_episode_rewards, mean_eval_rewards)
-            env.update_eval_graph()
+        # if (episode + 1) % 5 == 0:
+        #     mean_evaluate, _ = evaluate_agent(env, max_steps, 3, Qtable, in_train=True)
+        #     mean_episode_rewards.append(np.mean(episode_rewards)) 
+        #     mean_eval_rewards.append(mean_evaluate)
+        #     episode_rewards = []
+        #     env.change_map('dynamic')
+        #     eval_graph(mean_episode_rewards, mean_eval_rewards)
+        #     env.update_eval_graph()
 
     return Qtable
 
@@ -182,7 +182,7 @@ state_space = env.state_space
 action_space = env.action_space.n
 
 # Training parameters
-n_training_episodes = 300
+n_training_episodes = 600
 learning_rate = 0.1
 
 # Evaluation parameters

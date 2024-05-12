@@ -53,7 +53,9 @@ def auto(data):
             elif 'Tracking: Forward' in data:
                 car.forward()
     else: 
-        if oa_action ==	0: 
+        if all(d < 10 for d in distances):
+            car.stop()
+        elif oa_action == 0: 
             car.forward()
         elif oa_action == 1:
             car.left()
