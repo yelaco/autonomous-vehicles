@@ -1,0 +1,6 @@
+gym==0.26.2
+matplotlib==3.8.2
+numpy==1.26.3
+opencv-contrib-python==4.9.0.80
+pygame==2.5.2
+mpu6050==0.0.3

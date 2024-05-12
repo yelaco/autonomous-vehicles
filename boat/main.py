@@ -1,15 +1,21 @@
 import GPIO
-import time
 import pickle
+import traceback
+import threading
 from boat import Airboat
-from ultrasonic import UltrasonicThread
+from ultrasonic import Ultrasonic
 from pid import PIDController
 from utils import get_ip_addr, TcpConnThread
 from obstacle_avoiding import greedy_policy, get_sensor_values
 from video_streamer import stream_webcam
 
 def measure(): 
-    return -1
+    while not usv.is_shutdown:
+        try:
+            ultrasonic.measure_distances()
+            tcp_conn_thread.send_data(f"{ultrasonic.latest_measure};")
+        except Exception:
+            traceback.print_exc()
 
 def manual(data):
     global CONTROL_MODE
@@ -27,7 +33,6 @@ def manual(data):
 def auto(data): 
     # action to avoid obstacle
     distances = ultrasonic.latest_measure
-    tcp_conn_thread.send_data(f"{distances};")
     oa_action = greedy_policy(Qtable_rlcar, get_sensor_values(distances))
     if oa_action ==	0: 
          # The vehicle keeps going straight as there is no osbstacle
@@ -58,7 +63,7 @@ HOST = get_ip_addr()
 PORT = 65432
 rtsp_stream = stream_webcam(HOST)
 
-ultrasonic = UltrasonicThread(usv)
+ultrasonic = Ultrasonic(usv)
 pid = PIDController(kp=0.5, ki=0.1, kd=0.2)
 
 # Mode for controlling the boat
@@ -69,6 +74,7 @@ with open('config/q_table.pkl', 'rb') as f:
 
 try:
     tcp_conn_thread = TcpConnThread(HOST, PORT)
+    measure_thread = threading.Thread(target=measure)
     
     while tcp_conn_thread.running:
         if tcp_conn_thread.connected:

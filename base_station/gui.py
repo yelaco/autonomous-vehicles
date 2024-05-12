@@ -163,7 +163,7 @@ def show_sensors():
     except Exception:
         pass
 
-    work_frame.after(100, show_sensors)
+    work_frame.after(10, show_sensors)
  
 def show_frame():
     ret, frame = bs.real_time_control()

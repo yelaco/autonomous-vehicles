@@ -23,7 +23,10 @@ def tcp_client(server_address, port, sys_info):
                             sys_info.vehicle_type = "Boat"
                         elif "Car" in message:
                             sys_info.vehicle_type = "Car"
-                    sys_info.recv_msg = message.split(';')[0]
+
+                    msgs = message.split(';')
+                    sys_info.recv_msg = msgs[1] if len(msgs) > 2 else msgs[0] 
+                        
                     # print(f"Received message from server: {message}")
                 except ConnectionResetError:
                     print("Connection reset by peer")
