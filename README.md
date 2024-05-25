@@ -9,4 +9,3 @@ https://github.com/minhquang053/autonomous_vehicles/assets/100106895/b515ebe9-bc
 ![vehicles](https://github.com/minhquang053/autonomous_vehicle/assets/100106895/f95aee73-de40-4f3a-aa6a-f03a9bd3536d)
 
 ![uni_rank](https://github.com/minhquang053/autonomous_vehicles/assets/100106895/7d8d3185-cb24-45bd-a1ad-974640593d2e)
-
