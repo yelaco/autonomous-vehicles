@@ -4,11 +4,13 @@ def greedy_policy(Qtable, state):
     action = np.argmax(Qtable[tuple(state)])
     return action
 
-def get_sensor_values(distances):
+def get_sensor_values(distances, cam_check=None):
     k1 = 2
     k2 = 2
     k3 = 3
     k4 = 3
+    k5 = 1
+    k6 = 1
 
     # check the left side sensor
     dist = min(distances[0:3])
@@ -41,4 +43,11 @@ def get_sensor_values(distances):
     elif (detected[3] or detected[4]) and not detected[2]:
         k4 = 2 # outter right subsector 
 
-    return [k1, k2, k3, k4]
+    if cam_check == "both":
+        k5, k6 = 0, 0
+    elif cam_check == "right":
+        k6 = 0
+    elif cam_check == "left":
+        k5 = 0      
+
+    return [k1, k2, k3, k4, k5, k6]

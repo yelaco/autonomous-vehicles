@@ -45,10 +45,10 @@ class CameraBufferCleanerThread(threading.Thread):
 cap = cv2.VideoCapture(0)
 cam_cleaner = CameraBufferCleanerThread(cap)
 
-net = cv2.dnn.readNetFromONNX("boat_best.onnx")
-file = open("boat.txt","r")
-classes = ['bottle']
-# classes = ['parking', 'obstacle']
+net = cv2.dnn.readNetFromONNX("best.onnx")
+# file = open("boat.txt","r")
+# classes = ['bottle']
+classes = ['parking', 'obstacle']
 
 bbox = None
 tracking = False

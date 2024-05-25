@@ -41,8 +41,7 @@ def send_data(data):
 
 def test_send_data():
     random_array = [random.randint(0, 100) for _ in range(5)]
-    #send_data(f"{random_array}")
-    send_data(f"TEST")
+    send_data(f"{random_array}")
                 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
     # Bind the socket to the address and port
@@ -70,7 +69,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
                     print(data)
 
                     if "Which" in data:
-                        send_data("Vehicle: Boat")
+                        send_data("Vehicle: Car")
+                        print("HERE")
 
                     if "Disconnect" in data:
                         connected = False

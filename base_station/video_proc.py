@@ -2,6 +2,7 @@ import cv2
 import threading
 import numpy as np
 import time
+from inference import get_roboflow_model
 
 tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'CSRT', 'MOSSE']
 tracker_type = tracker_types[2]
@@ -25,6 +26,10 @@ class CameraBufferCleanerThread(threading.Thread):
 
 class VideoProcessor:
     def __init__(self, host):
+        self.model = get_roboflow_model(
+            model_id="car_11_4/5", # Roboflow model to use
+            api_key="hCR4jqAHhoEQhXUytxsJ"
+        )   
         self.cap = cv2.VideoCapture(f"rtsp://{host}:8554/video_stream")
         self.cam_cleaner = CameraBufferCleanerThread(self.cap)
         self.net = cv2.dnn.readNetFromONNX("config/boat_best.onnx")
@@ -72,50 +77,69 @@ class VideoProcessor:
         return ok, bbox
 
     def detect(self, frame, target):
-        # Detect objects using YOLOv5
         height, width, _ = frame.shape
-        blob = cv2.dnn.blobFromImage(frame, 1/255, (640, 640), (0, 0, 0), True, crop=False)
-        self.net.setInput(blob)
-        detections = self.net.forward()[0]
-                
-        classes_ids = []
-        confidences = []
-        boxes = []
-        rows = detections.shape[0]
-
         x_scale = width/640
         y_scale = height/640
+        results = self.model.infer(image=frame, confidence=0.5, iou_threshold=0.5)
 
-        for i in range(rows):
-            row = detections[i]
-            confidence = row[4]
-            if confidence >= 0.4:
-                classes_score = row[5:]
-                ind = np.argmax(classes_score)
-                if classes_score[ind] >= 0.25:
-                    classes_ids.append(ind)
-                    confidences.append(confidence)
-                    cx, cy, w, h = row[:4]
-                    x1 = int((cx- w/2)*x_scale)
-                    y1 = int((cy-h/2)*y_scale)
-                    wv= int(w * x_scale)
-                    hv = int(h * y_scale)
-                    box = np.array([x1,y1,wv,hv])
-                    boxes.append(box)
-
-        if len(boxes) > 0:
-            num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.25,0.45)
-            target_id = -1
-            max_conf = -1 
-            for i in num_retained_boxes:
-                if self.classes[classes_ids[i]] == target and max_conf < confidences[i]:
-                    target_id = i
-                    max_conf = confidences[i]
-                        
-            if target_id > -1:
-                bbox = boxes[target_id]
+        # Plot image with face bounding box (using opencv)
+        for prediction in results[0].predictions:
+            if prediction.class_name == target:
+                cx, cy, w, h = int(prediction.x), int(prediction.y), int(prediction.width), int(prediction.height)
+                x1 = int((cx- w/2)*x_scale)
+                y1 = int((cy-h/2)*y_scale)
+                wv= int(w * x_scale)
+                hv = int(h * y_scale)
+                bbox = np.array([x1,y1,wv,hv])
                 return True, bbox
-        return False, None 
+        
+        return False, None
+    
+    # def detect(self, frame, target):
+    #     # Detect objects using YOLOv5
+    #     height, width, _ = frame.shape
+    #     blob = cv2.dnn.blobFromImage(frame, 1/255, (640, 640), (0, 0, 0), True, crop=False)
+    #     self.net.setInput(blob)
+    #     detections = self.net.forward()[0]
+                
+    #     classes_ids = []
+    #     confidences = []
+    #     boxes = []
+    #     rows = detections.shape[0]
+
+    #     x_scale = width/640
+    #     y_scale = height/640
+
+    #     for i in range(rows):
+    #         row = detections[i]
+    #         confidence = row[4]
+    #         if confidence >= 0.4:
+    #             classes_score = row[5:]
+    #             ind = np.argmax(classes_score)
+    #             if classes_score[ind] >= 0.25:
+    #                 classes_ids.append(ind)
+    #                 confidences.append(confidence)
+    #                 cx, cy, w, h = row[:4]
+    #                 x1 = int((cx- w/2)*x_scale)
+    #                 y1 = int((cy-h/2)*y_scale)
+    #                 wv= int(w * x_scale)
+    #                 hv = int(h * y_scale)
+    #                 box = np.array([x1,y1,wv,hv])
+    #                 boxes.append(box)
+
+    #     if len(boxes) > 0:
+    #         num_retained_boxes = cv2.dnn.NMSBoxes(boxes,confidences,0.25,0.45)
+    #         target_id = -1
+    #         max_conf = -1 
+    #         for i in num_retained_boxes:
+    #             if self.classes[classes_ids[i]] == target and max_conf < confidences[i]:
+    #                 target_id = i
+    #                 max_conf = confidences[i]
+                        
+    #         if target_id > -1:
+    #             bbox = boxes[target_id]
+    #             return True, bbox
+    #     return False, None 
 
     def close(self):
         self.cam_cleaner.running = False

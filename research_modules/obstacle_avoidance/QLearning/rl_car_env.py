@@ -57,20 +57,23 @@ class Car(pygame.sprite.Sprite):
         self.sensors = [Sensor(self.rect.center, angle) for angle in self.sensor_angles]
 
     def update(self):
-        # Check for collisions with obstacles and walls
+        # check for collisions with obstacles and walls
         self.collided = False
         
+        # check for collisions with round obstacles 
         for obstacle in obstacles:
             intersection = self.get_circle_circle_intersection(self.rect.center, CAR_RADIUS, obstacle.rect.center, obstacle.radius)
             if intersection:
                 self.collided = True
 
+        # check for collisions with other vehicles
         for mov in moving_obstacles:
             intersection = self.get_circle_circle_intersection(self.rect.center, CAR_RADIUS, mov.rect.center, mov.radius)
-            if intersection and self.check_other_moving_cars([mov]):
+            if intersection and self.check_other_moving_cars([mov])[2]:
                 self.collided = True
             
 
+        # check for collisions with walls
         for wall in CIRCULAR_WALLS:
             intersection = self.get_circle_circle_intersection(self.rect.center, CAR_RADIUS, wall[:2], wall[2])
             if intersection:
@@ -81,6 +84,10 @@ class Car(pygame.sprite.Sprite):
             sensor.update(self.rect.center, self.angle)
 
     def get_circle_circle_intersection(self, center1, radius1, center2, radius2):
+        """Check for intersection between 2 circles
+        Parameters: the centers of the two circles and their corresponding radiuses
+        Returns: the intersection points if existed
+        """
         distance = math.dist(center1, center2)
 
         # Check if circles have the same center
@@ -128,6 +135,9 @@ class Car(pygame.sprite.Sprite):
         bool: True if the other car is visible within the current car's line of sight, False otherwise.
         """
         # Calculate vector from current car to other car
+        left_side = False
+        right_side = False
+
         for other_car in other_cars:
             dx = other_car.rect.centerx - self.rect.centerx
             dy = other_car.rect.centery - self.rect.centery
@@ -140,26 +150,42 @@ class Car(pygame.sprite.Sprite):
             if angle_diff > 180:
                 angle_diff -= 360
 
-            # Define line of sight threshold (adjust as needed)
-            line_of_sight_angle = 100  # Angle in degrees within which another car is considered visible
+            # Define line of sight threshold
+            line_of_sight_angle = 50  # Angle in degrees within which another car is considered visible
 
-            # Check if the other car is within the line of sight angle
-            if abs(angle_diff) <= line_of_sight_angle / 2:
-                # Now check if the other car is within the distance threshold (adjust as needed)
+            # Check if the other car is within the right side (+50 degrees) or left side (-50 degrees) line of sight angles
+            if 0 <= angle_diff <= line_of_sight_angle:
+                # Check if the other car is within the distance threshold (adjust as needed)
+                distance_threshold = SENSOR_LENGTH + 30  # Use your sensor length or visibility range
+                distance_squared = dx**2 + dy**2
+
+                if distance_squared <= distance_threshold**2:
+                    left_side = True
+
+            if -line_of_sight_angle <= angle_diff <= 0:
+                # Check if the other car is within the distance threshold (adjust as needed)
                 distance_threshold = SENSOR_LENGTH  # Use your sensor length or visibility range
                 distance_squared = dx**2 + dy**2
 
                 if distance_squared <= distance_threshold**2:
-                    return True
+                    right_side = True
 
-        return False
+        return left_side, right_side, left_side or right_side
 
     def get_sensor_values(self):
-        k1 = 2
-        k2 = 2
-        k3 = 3
-        k4 = 3
-        k5 = 1
+        """
+        Translate the distances returned from the sensors to an enviroment's state
+        => quantize state space
+
+        Returns:
+        A valid state in state space
+        """
+        k1 = 2 # left zone
+        k2 = 2 # right zone
+        k3 = 3 # left sector
+        k4 = 3 # right sector
+        k5 = 1 # moving obstacles left side
+        k6 = 1 # moving obstacles right side
 
         distances = [sensor.distance for sensor in self.sensors]
 
@@ -197,10 +223,13 @@ class Car(pygame.sprite.Sprite):
         elif (detected[3] or detected[4]) and not detected[2]:
             k4 = 2 # outter right subsector 
 
-        if self.check_other_moving_cars(moving_obstacles):
-            k5 = 0
+        lside, rside, _ = self.check_other_moving_cars(moving_obstacles)
+        if lside:
+            k5 = 0 # if there are moving cars in left side
+        if rside:
+            k6 = 0 # if there are moving cars in right side
 
-        return [k1, k2, k3, k4, k5] 
+        return [k1, k2, k3, k4, k5, k6] 
 
     def reset_car_position(self):
         # If collision with an obstacle, respawn the car at the center
@@ -209,7 +238,7 @@ class Car(pygame.sprite.Sprite):
         self.angle = self.initial_angle
         self.update()
     
-# Sensor class
+# Sensor class. Each instance is corresponding to a sensor in real life
 class Sensor(pygame.sprite.Sprite):
     def __init__(self, start_pos, angle_offset):
         super().__init__()
@@ -235,6 +264,7 @@ class Sensor(pygame.sprite.Sprite):
         closest_obstacle = None
         closest_distance = SENSOR_LENGTH
 
+        # Check for collisions with round obstacles
         for obstacle in obstacles:
             intersection = self.get_line_circle_intersection(self.start_pos, self.end_pos, obstacle.rect.center, obstacle.radius)
             if intersection:
@@ -247,6 +277,7 @@ class Sensor(pygame.sprite.Sprite):
                     closest_distance = min(distance, SENSOR_LENGTH)  # Cap distance at sensor length
                     closest_obstacle = obstacle
         
+        # Check for collisions with moving obstacles
         for obstacle in moving_obstacles:
             intersection = self.get_line_circle_intersection(self.start_pos, self.end_pos, obstacle.rect.center, obstacle.radius)
             if intersection:
@@ -259,6 +290,7 @@ class Sensor(pygame.sprite.Sprite):
                     closest_distance = min(distance, SENSOR_LENGTH)  # Cap distance at sensor length
                     closest_obstacle = obstacle
 
+        # Check for collisions with walls
         for wall in CIRCULAR_WALLS:
             intersection = self.get_line_circle_intersection(self.start_pos, self.end_pos, wall[:2], wall[2])
             if intersection:
@@ -324,6 +356,8 @@ class Sensor(pygame.sprite.Sprite):
 
     @staticmethod
     def is_within_line_segment(intersection):
+        """Check if there is an object crossing the line
+        """
         x1, y1, x2, y2 = intersection
         return 0 <= x1 <= x2 or 0 <= x2 <= x1
 
@@ -378,10 +412,11 @@ class MovingObstacle(Obstacle):
         self.rect.y = HEIGHT // 2 + int(self.moving_radius * math.sin(self.angle))
          
     
-# Function to create obstacles with random positions
+# Function to create obstacles with dynamic or static positions
 def create_obstacles(num_obstacles, map='none'):
     obstacles = pygame.sprite.Group()
-    if map == 'static_fixed':
+    moving_obstacles = pygame.sprite.Group()
+    if map == 'static_fixed': # only fixed position obstacles
         x = 160
         obstacles.add(Obstacle(WIDTH // 2, 0, OBS_RADIUS + 10))
         obstacles.add(Obstacle(WIDTH // 2, HEIGHT, OBS_RADIUS + 10))
@@ -392,7 +427,7 @@ def create_obstacles(num_obstacles, map='none'):
         obstacles.add(Obstacle(x, HEIGHT - x, OBS_RADIUS + 5))
         obstacles.add(Obstacle(HEIGHT - x, x, OBS_RADIUS + 5))
         obstacles.add(Obstacle(WIDTH // 2, HEIGHT // 2, OBS_RADIUS))
-    elif map == 'static_random':
+    elif map == 'static_random': # only random spawn obstacles
         for _ in range(num_obstacles):
             while True:
                 x_1 = random.randint(WIDTH // 2 - 100, WIDTH)
@@ -404,11 +439,11 @@ def create_obstacles(num_obstacles, map='none'):
                 obstacle = Obstacle(x, y, OBS_RADIUS + 10)
                 if not pygame.sprite.collide_rect(car, obstacle):
                     break
-            obstacles.add(obstacle)
-    elif map == 'dynamic':
+            obstacles.add(obstacle) 
+    elif map == 'dynamic': # only moving obstacles
         obstacles.add(MovingObstacle(OBS_RADIUS - 5, 50, 0.5, clockwise=False))
         obstacles.add(MovingObstacle(OBS_RADIUS - 5, 150, 0.5))
-    elif map == 'static_dynamic':
+    elif map == 'static_dynamic': # fixed position and moving obstacles
         x = 160
         moving_obstacles = pygame.sprite.Group()
         obstacles.add(Obstacle(WIDTH // 2, 0, OBS_RADIUS + 10))
@@ -424,10 +459,27 @@ def create_obstacles(num_obstacles, map='none'):
         mov_2 = MovingObstacle(OBS_RADIUS - 5, 175, 0.5)
         moving_obstacles.add(mov_1)
         moving_obstacles.add(mov_2)
-        return obstacles, moving_obstacles
+    elif map == 'static_random_dynamic': # random spawn and moving obstacles
+        moving_obstacles = pygame.sprite.Group()
+        for _ in range(num_obstacles):
+            while True:
+                x_1 = random.randint(WIDTH // 2 - 100, WIDTH)
+                x_2 = random.randint(WIDTH // 2 - 200, WIDTH)
+                x = random.choice([x_1, x_2])
+                y_offset = int(math.sqrt(CIRCLE_BORDER_RADIUS**2 - abs(WIDTH // 2 - x)**2)) 
+                y = random.randint(HEIGHT // 2 - y_offset, HEIGHT // 2 + int(y_offset))
+
+                obstacle = Obstacle(x, y, OBS_RADIUS + 10)
+                if not pygame.sprite.collide_rect(car, obstacle):
+                    break
+            obstacles.add(obstacle)
+        mov_1 = MovingObstacle(OBS_RADIUS - 5, 75, 0.5, clockwise=False)
+        mov_2 = MovingObstacle(OBS_RADIUS - 5, 175, 0.5)
+        moving_obstacles.add(mov_1)
+        moving_obstacles.add(mov_2)
     else:
         pass
-    return obstacles
+    return obstacles, moving_obstacles
 
 # Create sprites
 all_sprites = pygame.sprite.Group()
@@ -448,9 +500,9 @@ class RlCarEnv(gym.Env):
         # Action |  Straight | Left | Right
         # ==> 3 actions discrete actions
         self.action_space = spaces.Discrete(3)
-        self.state_space = [3, 3, 4, 4, 2]
-        low = [0, 0, 0, 0, 0]
-        high = [2, 2, 3, 3, 1]
+        self.state_space = [3, 3, 4, 4, 2, 2]
+        low = [0, 0, 0, 0, 0, 0]
+        high = [2, 2, 3, 3, 1, 1]
         self.observation_space = spaces.Box(low=np.array(low), high=np.array(high), dtype=np.uint8)
         
         # Initialize Pygame
@@ -483,12 +535,14 @@ class RlCarEnv(gym.Env):
         # Game loop
         self.clock = pygame.time.Clock()
     
-    def change_map(self, map='static_fixed'):
+    def change_map(self, map='static_dynamic'):
         global all_sprites
         global obstacles
+        global moving_obstacles
         all_sprites.remove(*obstacles)
-        obstacles = create_obstacles(NUM_OBSTACLE, map)
-        all_sprites.add(*obstacles) 
+        all_sprites.remove(*moving_obstacles)
+        obstacles, moving_obstacles = create_obstacles(NUM_OBSTACLE, map)
+        all_sprites.add(*obstacles, *moving_obstacles) 
 
     def reset(self):
         # Reset the environment to its initial state
@@ -496,10 +550,10 @@ class RlCarEnv(gym.Env):
         return np.array(car.get_sensor_values(), dtype=np.uint8)
 
     def step(self, action):
-        speed = car.speed - 1
-        if action == 1:
+        speed = car.speed - 1 # balance out the speed when turning left or right on screen
+        if action == 1: # Turn left
             car.angle += 5
-        elif action == 2:
+        elif action == 2: # Turn right
             car.angle -= 5
         else:
             speed = car.speed
@@ -508,6 +562,7 @@ class RlCarEnv(gym.Env):
 
         next_obs = np.array(car.get_sensor_values(), dtype=np.int8)
         if hasattr(self, 'current_obs') and not np.array_equal(next_obs, self.current_obs):
+            # update to the second latest state
             self.last_diff_obs = self.current_obs
  
         r1 = 0
@@ -522,17 +577,24 @@ class RlCarEnv(gym.Env):
             reward = CRASH
         else:
             if action == 1 or action == 2:
-               r1 = -0.1
+               r1 = -0.1 # if turning
             else:
-                r1 = 0.2
+                r1 = 0.2 # if going straight
             
-            if hasattr(self, 'last_diff_obs') and sum(next_obs - self.last_diff_obs) >= 0:
-                r2 = 0.2
-            else:
-                r2 = -0.1            
+            if hasattr(self, 'last_diff_obs'):
+                # value to indicate if the agent advanced to a better/worse state
+                # or was just maintaining the current state
+                obs_trans_val = sum(next_obs - self.last_diff_obs)
+                if obs_trans_val > 0: # better state
+                    r2 = 0.2 
+                elif obs_trans_val < 0: # worse state
+                    r2 = -0.1 
+                else: # maintain state
+                    if action == 0:
+                        r2 = 0.15
 
             if hasattr(self, 'prev_action') and ((self.prev_action == 1 and action == 2) or (self.prev_action == 2 and action == 1)):
-                r3 = -0.8
+                r3 = -0.8 # if turning left then right immediately after or vice versa
             reward = r1 + r2 + r3
 
         self.prev_action = action
@@ -544,6 +606,8 @@ class RlCarEnv(gym.Env):
         self.image_rect = self.image.get_rect(topleft=(WIDTH + 50, 0))
 
     def state_translate(self, state):
+        """To draw the visualization of sensors range
+        """
         colors = [WHITE] * 8
         
         if state[0] == 0:
@@ -576,9 +640,10 @@ class RlCarEnv(gym.Env):
         return colors
 
     def render(self, info=""):
+        """To render the simulation
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
                 return True
             
         # Update

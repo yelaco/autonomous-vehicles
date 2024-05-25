@@ -4,7 +4,6 @@ import threading
 import traceback
 from car import Car
 from ultrasonic import Ultrasonic
-from pid import PIDController
 from utils import get_ip_addr, TcpConnThread
 from obstacle_avoiding import greedy_policy, get_sensor_values
 from video_streamer import stream_webcam
@@ -35,23 +34,12 @@ def auto(data):
     distances = ultrasonic.latest_measure
     oa_action = greedy_policy(Qtable_rlcar, get_sensor_values(distances))
     if 'Tracking' in data:
-            # measured_value = measure()
-            # usv.move(pid.update(measured_value))
-            # ==> Plan to use pid controller later
-
-            if distances[2] < 5:
-                car.stop()
-                tcp_conn_thread.running = False
-                tcp_conn_thread.connected = False
-                return
-            
-            # temporary using old method
-            if 'Tracking: Left' in data:
-                car.left()
-            elif 'Tracking: Right' in data:
-                car.right()
-            elif 'Tracking: Forward' in data:
-                car.forward()
+        if 'Tracking: Left' in data:
+            oa_action = greedy_policy(Qtable_rlcar, get_sensor_values(distances, "left"))
+        elif 'Tracking: Right' in data:
+            oa_action = greedy_policy(Qtable_rlcar, get_sensor_values(distances, "right"))
+        elif 'Tracking: Forward' in data:
+            oa_action = greedy_policy(Qtable_rlcar, get_sensor_values(distances, "both"))
     else: 
         if all(d < 10 for d in distances):
             car.stop()
@@ -70,7 +58,6 @@ PORT = 65432
 rtsp_stream = stream_webcam(HOST)
 
 ultrasonic = Ultrasonic(car)
-pid = PIDController(kp=0.5, ki=0.1, kd=0.2)
 
 # Mode for controlling the boat
 CONTROL_MODE = 2 # 0: shutdown, 1: manual, 2: auto

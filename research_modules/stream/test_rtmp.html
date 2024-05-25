@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Bootstrap Example</title>
+  <meta charset="utf-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1">
+     <link href="https://vjs.zencdn.net/7.2.3/video-js.css"     rel="stylesheet">
+  </head>
+  <body style="height:1500px"></body>
+    <h3>Video camera</h3>
+<video id='hls-example' class="video-js vjs-default-skin" width="640" height="480" controls>
+<source type="application/x-mpegURL" src="http://35.240.198.118:8088/hls/stream/index.m3u8"></video>
+   </body>
+<script src="https://vjs.zencdn.net/ie8/ie8-version/videojs-ie8.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-hls/5.14.1/videojs-contrib-hls.js"></script>
+<script src="https://vjs.zencdn.net/7.2.3/video.js"></script>
+<script>
+var player = videojs('hls-example', {
+   html5: {
+      vhs: {
+         overrideNative: true
+      }
+
+   }
+});
+
+player.play();
+</script>
+</html> 

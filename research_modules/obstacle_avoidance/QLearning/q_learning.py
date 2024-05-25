@@ -98,8 +98,9 @@ def train(n_training_episodes, min_epsilon, max_epsilon, learning_rate, gamma, d
             new_state, reward, terminated, _, _ = env.step(action) # Terminated, Truncated, Info are not needed
             total_rewards_ep += reward
 
-            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[0]}    RZ: {state[1]}    LS: {state[2]}    RS: {state[3]}\nAction:  {actions[action]}\nReward: {'{:.2f}'.format(reward)}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_training_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
-            if quit: return Qtable
+            quit = env.render(f"Episode: {episode}        Step: {step}\nLZ: {state[0]}    RZ: {state[1]}    LS: {state[2]}    RS: {state[3]}    LM: {state[4]}  RM: {state[5]}\nAction:  {actions[action]}\nReward: {'{:.2f}'.format(reward)}\nCrash: {total_crash}\n\nMode: Training\nMax episodes: {n_training_episodes}\nMax steps: {max_steps}\nLearning rate: {learning_rate}\nGamma: {gamma}\nEpsilon: {'{:.2f}'.format(epsilon)}")
+            if quit: 
+                return Qtable
 
             # custom indexing for state and action 
             state_action = tuple(np.append(state, action))
@@ -119,15 +120,17 @@ def train(n_training_episodes, min_epsilon, max_epsilon, learning_rate, gamma, d
         
         episode_rewards.append(total_rewards_ep)
         
-        # if (episode + 1) % 5 == 0:
-        #     mean_evaluate, _ = evaluate_agent(env, max_steps, 3, Qtable, in_train=True)
-        #     mean_episode_rewards.append(np.mean(episode_rewards)) 
-        #     mean_eval_rewards.append(mean_evaluate)
-        #     episode_rewards = []
-        #     env.change_map('dynamic')
-        #     eval_graph(mean_episode_rewards, mean_eval_rewards)
-        #     env.update_eval_graph()
-
+        if (episode + 1) % 4 == 0:
+            # mean_evaluate, _ = evaluate_agent(env, max_steps, 3, Qtable, in_train=True)
+            # mean_episode_rewards.append(np.mean(episode_rewards)) 
+            # mean_eval_rewards.append(mean_evaluate)
+            # episode_rewards = []
+            env.change_map('static_random_dynamic')
+            # eval_graph(mean_episode_rewards, mean_eval_rewards)
+            # env.update_eval_graph()
+        else:
+            env.change_map('static_dynamic')
+            
     return Qtable
 
 def evaluate_agent(env, max_steps, n_eval_episodes, Q, in_train=False):
@@ -135,7 +138,7 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q, in_train=False):
     mean_reward = 0
     total_crash = 0
     for episode in range(n_eval_episodes):
-        env.change_map(map='static_fixed')
+        env.change_map(map='static_random_dynamic')
         state = env.reset()
         total_rewards_ep = 0
     
@@ -149,7 +152,7 @@ def evaluate_agent(env, max_steps, n_eval_episodes, Q, in_train=False):
 
             if terminated:
                 if step < 10:
-                    env.change_map(map='static_fixed')
+                    env.change_map(map='static_random_dynamic')
                     state = env.reset()
                     continue
                 total_crash += 1
@@ -190,13 +193,13 @@ n_eval_episodes = 100
 
 # Environment parameters
 env_id = "RlCar-v0"   
-max_steps = 1200
+max_steps = 2000
 gamma = 0.9               
 eval_seed = []             
 
 # Exploration parameters
 max_epsilon = 0.95           
-min_epsilon = 0.05           
+min_epsilon = 0.01           
 decay_rate = 0.005
 
 if len(sys.argv) == 1:
@@ -219,7 +222,7 @@ if proc == "train":
         pickle.dump(Qtable_rlcar, f)
 
 elif proc == "evaluate":
-    with open('q_table.pkl', 'rb') as f:
+    with open('best_q_table.pkl', 'rb') as f:
         Qtable_rlcar = pickle.load(f)
 
     # Evaluate our Agent
@@ -228,13 +231,13 @@ elif proc == "evaluate":
 
 elif proc == "tuning":
     tunings = [
-        #(0.5, 0.9, 0.005),
+        (0.5, 0.9, 0.005),
         (0.1, 0.9, 0.005),
-        #(0.05, 0.9, 0.005),
-        #(0.5, 0.95, 0.005),
-        #(0.5, 0.975, 0.005),
-        #(0.5, 0.9, 0.05),
-        #(0.5, 0.9, 0.0005)
+        (0.05, 0.9, 0.005),
+        (0.5, 0.95, 0.005),
+        (0.5, 0.975, 0.005),
+        (0.5, 0.9, 0.05),
+        (0.5, 0.9, 0.0005)
     ]
     for tune in tunings:
         lr, gm, dr = tune
@@ -244,14 +247,14 @@ elif proc == "tuning":
 
     
 elif proc == "check":
-    with open('q_table.pkl', 'rb') as f:
+    with open('best_q_table.pkl', 'rb') as f:
         Qtable_rlcar = pickle.load(f)
 
     state_space = env.state_space
     action_space = env.action_space.n
     
     # Print the Q-table in the specified format
-    header = ["Straight", "Left", "Right", "RZ", "LZ", "ORS", "IRS", "ILS", "OLS"]
+    header = ["Straight", "Left", "Right", "RZ", "LZ", "RS", "LS", "LM", "RM"]
     header_str = "{:^8}" * env.action_space.n + " | " + "{:^4}" * len(state_space)
     print(header_str.format(*header))
 

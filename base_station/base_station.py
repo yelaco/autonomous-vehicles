@@ -1,4 +1,3 @@
-import numpy as np
 from video_proc import VideoProcessor
 from utils import tcp_client
 import traceback
@@ -45,9 +44,9 @@ class BaseStation:
                     else :
                         self.mode = 'detect'
                 elif self.mode == 'detect': 
-                    detected, bbox = self.vproc.detect(frame, 'bottle')
+                    detected, bbox = self.vproc.detect(frame, 'cars')
                     if detected:	
-                        self.vproc.tracker = self.vproc.init_tracker(frame, bbox, 'bottle')
+                        self.vproc.tracker = self.vproc.init_tracker(frame, bbox, 'cars')
                         self.mode = 'tracking'
                     else:
                         self.send_command('Detecting')
